@@ -7,7 +7,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "cd ../server && npm run server",
+    "server:start": "cd ../server && npm start",
+    "server:seed": "cd ../server && npm run seed",
+    "dev": "concurrently \"npm run server\" \"npm start\"",
+    "full:dev": "concurrently \"npm run server\" \"npm start\" \"cd ../server && npm run seed\""
   },
   "dependencies": {
     "@material-ui/core": "^4.12.4",
@@ -19,6 +24,9 @@
     "react-google-login": "^5.2.2",
     "react-router-dom": "^6.22.1",
     "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
   "eslintConfig": {
     "extends": [
