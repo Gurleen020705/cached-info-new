@@ -14,14 +14,14 @@ const ResourceForm = () => {
         skill: '',
         exam: ''
     });
-
+    
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [universities, setUniversities] = useState([]);
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
-
+    
     // Dropdown options
     const resourceTypes = [
         { value: 'university', label: 'University' },
@@ -135,7 +135,7 @@ const ResourceForm = () => {
             ...prev,
             [name]: value
         }));
-
+        
         // Clear error when user starts typing
         if (errors[name]) {
             setErrors(prev => ({
@@ -173,13 +173,13 @@ const ResourceForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        
         if (!validateForm()) {
             return;
         }
 
         setIsSubmitting(true);
-
+        
         try {
             // Prepare data based on resource type
             const submitData = {
@@ -219,12 +219,12 @@ const ResourceForm = () => {
                 skill: '',
                 exam: ''
             });
-
+            
             // Reset success message after 3 seconds
             setTimeout(() => {
                 setSubmitSuccess(false);
             }, 3000);
-
+            
         } catch (error) {
             console.error('Error submitting resource:', error);
             if (error.response?.data?.errors) {
@@ -249,7 +249,7 @@ const ResourceForm = () => {
             <label htmlFor={name} className="form-label">
                 {label} {required && <span className="required">*</span>}
             </label>
-
+            
             {type === 'select' ? (
                 <select
                     id={name}
@@ -286,7 +286,7 @@ const ResourceForm = () => {
                     placeholder={`Enter ${label.toLowerCase()}`}
                 />
             )}
-
+            
             {errors[name] && (
                 <p className="error-message">{errors[name]}</p>
             )}
@@ -313,7 +313,7 @@ const ResourceForm = () => {
                     {renderField('description', 'Description', 'textarea')}
                     {renderField('type', 'Type', 'select', resourceTypes)}
                     {renderField('url', 'Resource URL', 'url')}
-
+                    
                     {formData.type === 'university' && (
                         <>
                             {renderField('university', 'University', 'select', universities)}
@@ -321,11 +321,11 @@ const ResourceForm = () => {
                             {formData.domain && renderField('subject', 'Subject', 'select', subjects)}
                         </>
                     )}
-
+                    
                     {formData.type === 'skill' && (
                         renderField('skill', 'Skill Name', 'text')
                     )}
-
+                    
                     {formData.type === 'competitive' && (
                         renderField('exam', 'Exam Name', 'text')
                     )}

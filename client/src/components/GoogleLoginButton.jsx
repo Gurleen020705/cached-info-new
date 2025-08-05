@@ -1,37 +1,25 @@
 import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../context/authContext';
-import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from 'react-google-login';
+import { useNavigate } from 'react-router-dom'; // ✅ updated import
 
 const GoogleLoginButton = () => {
-    const { googleLogin } = useAuth();
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // ✅ useNavigate instead of useHistory
 
-    const handleSuccess = async (credentialResponse) => {
-        try {
-            await googleLogin(credentialResponse.credential);
-            // The auth context will handle the redirect based on user role
-        } catch (error) {
-            console.error('Login failed:', error);
-        }
-    };
-
-    const handleError = () => {
-        console.error('Google login failed');
+    const responseGoogle = (response) => {
+        console.log(response);
+        // Send token to your backend for verification
+        // Then redirect or update state
+        navigate('/'); // ✅ updated usage
     };
 
     return (
-        <div className="google-login-container">
-            <GoogleLogin
-                onSuccess={handleSuccess}
-                onError={handleError}
-                useOneTap
-                theme="filled_blue"
-                size="large"
-                text="signin_with"
-                shape="rectangular"
-            />
-        </div>
+        <GoogleLogin
+            clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
+            buttonText="Login with Google"
+            onSuccess={responseGoogle}
+            onFailure={responseGoogle}
+            cookiePolicy={'single_host_origin'}
+        />
     );
 };
 
