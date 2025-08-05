@@ -11,17 +11,11 @@ const Subject = require('./models/Subject');
 const Resource = require('./models/Resource');
 const User = require('./models/User');
 
-// Sample data
-const universities = [
-  { name: 'MIT', location: 'Cambridge, MA' },
-  { name: 'Stanford University', location: 'Stanford, CA' },
-  { name: 'Harvard University', location: 'Cambridge, MA' },
-  { name: 'University of California, Berkeley', location: 'Berkeley, CA' },
-  { name: 'Carnegie Mellon University', location: 'Pittsburgh, PA' },
-  { name: 'University of Michigan', location: 'Ann Arbor, MI' },
-  { name: 'Georgia Institute of Technology', location: 'Atlanta, GA' },
-  { name: 'University of Illinois Urbana-Champaign', location: 'Champaign, IL' }
-];
+// Import comprehensive university data
+const universities = require('./data/universities').map(uni => ({
+  name: uni.name,
+  location: `${uni.city || uni.state}, ${uni.country}`
+}));
 
 const domains = [
   { name: 'Computer Science', description: 'Programming, algorithms, and software development' },

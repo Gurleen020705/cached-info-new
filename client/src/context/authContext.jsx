@@ -55,7 +55,7 @@ const AuthProvider = ({ children }) => {
     }
   }, [authState.token, loadUser]);
 
-  // Google login
+  // Google login with role-based redirect
   const googleLogin = async (tokenId) => {
     try {
       const res = await axios.post('/api/auth/google', { tokenId });
@@ -69,9 +69,15 @@ const AuthProvider = ({ children }) => {
         loading: false
       });
 
-      navigate('/');
+      // Role-based redirect
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       console.error(err.response?.data || err.message);
+      throw err;
     }
   };
 
@@ -87,13 +93,25 @@ const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
+  // Check if user is admin
+  const isAdmin = () => {
+    return authState.user?.role === 'admin';
+  };
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    return authState.isAuthenticated && !!authState.user;
+  };
+
   return (
     <AuthContext.Provider
       value={{
         authState,
         googleLogin,
         logout,
-        loadUser
+        loadUser,
+        isAdmin,
+        isAuthenticated
       }}
     >
       {!authState.loading && children}

@@ -35,6 +35,44 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Helper function to validate URL format
+    const isValidUrl = (string) => {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    };
+
+    // Reset form to initial state
+    const resetForm = () => {
+        setActiveStep(0);
+        setResourceType('');
+        setFormData({
+            title: '',
+            description: '',
+            url: '',
+            university: '',
+            domain: '',
+            subject: '',
+            skill: '',
+            exam: ''
+        });
+        setErrors({});
+        setDomains([]);
+        setSubjects([]);
+        setIsSubmitting(false);
+    };
+
+    // Reset form when dialog closes
+    useEffect(() => {
+        if (!open) {
+            resetForm();
+        }
+    }, [open]);
 
     useEffect(() => {
         if (resourceType === 'university') {
@@ -87,6 +125,10 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         setActiveStep(prevActiveStep => prevActiveStep + 1);
     };
 
+    const handleClear = () => {
+        resetForm();
+    };
+
     const handleBack = () => {
         setActiveStep(prevActiveStep => prevActiveStep - 1);
     };
@@ -101,6 +143,7 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         const newErrors = {};
         if (!formData.title) newErrors.title = 'Title is required';
         if (!formData.url) newErrors.url = 'URL is required';
+        else if (!isValidUrl(formData.url)) newErrors.url = 'Please enter a valid URL';
         if (!formData.description) newErrors.description = 'Description is required';
 
         if (resourceType === 'university') {
@@ -117,6 +160,8 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
             setErrors(newErrors);
             return;
         }
+
+        setIsSubmitting(true);
 
         try {
             const payload = {
@@ -138,9 +183,12 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
 
             await axios.post('/api/resources', payload);
             onClose(true);
+            resetForm();
         } catch (err) {
             console.error(err);
             setErrors({ submit: err.response?.data?.msg || 'Submission failed' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -332,18 +380,21 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
                 )}
             </DialogContent>
             <DialogActions>
-                <Button onClick={handleBack} disabled={activeStep === 0}>
+                <Button onClick={handleBack} disabled={activeStep === 0 || isSubmitting}>
                     Back
                 </Button>
                 {activeStep === steps.length - 1 ? (
-                    <Button onClick={handleSubmit} color="primary" variant="contained">
-                        Submit
+                    <Button onClick={handleSubmit} color="primary" variant="contained" disabled={isSubmitting}>
+                        {isSubmitting ? 'Submitting...' : 'Submit'}
                     </Button>
                 ) : (
-                    <Button onClick={handleNext} color="primary" variant="contained">
+                    <Button onClick={handleNext} color="primary" variant="contained" disabled={isSubmitting}>
                         Next
                     </Button>
                 )}
+                <Button onClick={handleClear} color="secondary" variant="outlined" disabled={isSubmitting}>
+                    Clear
+                </Button>
             </DialogActions>
         </Dialog>
     );

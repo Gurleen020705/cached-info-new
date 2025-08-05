@@ -22,22 +22,26 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cached-info
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('✅ MongoDB connected successfully'))
-.catch(err => console.log('❌ MongoDB connection error:', err));
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch(err => console.log('❌ MongoDB connection error:', err));
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const resourceRoutes = require('./routes/resources');
+const adminRoutes = require('./routes/admin');
+const userRoutes = require('./routes/users');
 
 // Route middleware
 app.use('/api/auth', authRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 // Additional API routes for your frontend
 app.get('/api/universities', async (req, res) => {
   try {
     const University = require('./models/University');
-    const universities = await University.find().select('name');
+    const universities = await University.find().select('_id name');
     res.json(universities);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching universities' });
@@ -69,7 +73,7 @@ app.get('/api/search', async (req, res) => {
   try {
     const { q } = req.query;
     const Resource = require('./models/Resource');
-    
+
     if (!q) {
       return res.json([]);
     }
@@ -113,9 +117,9 @@ app.get('/api/users/count', async (req, res) => {
 app.post('/api/requests', async (req, res) => {
   try {
     const { title, description, type, subject, university, domain, skill, exam, priority, contactEmail } = req.body;
-    
-    // For now, just log the request (you can create a Request model later)
-    console.log('Resource Request:', {
+    const Request = require('./models/Request');
+
+    const newRequest = new Request({
       title,
       description,
       type,
@@ -125,20 +129,22 @@ app.post('/api/requests', async (req, res) => {
       skill,
       exam,
       priority,
-      contactEmail,
-      timestamp: new Date()
+      contactEmail
     });
 
-    res.json({ message: 'Request submitted successfully' });
+    await newRequest.save();
+    res.json({ message: 'Request submitted successfully', requestId: newRequest._id });
   } catch (error) {
+    console.error('Error submitting request:', error);
     res.status(500).json({ message: 'Error submitting request' });
   }
 });
 
 app.get('/api/requests/count', async (req, res) => {
   try {
-    // For now, return a mock count (you can implement this properly later)
-    res.json({ count: 15 });
+    const Request = require('./models/Request');
+    const count = await Request.countDocuments();
+    res.json({ count });
   } catch (error) {
     res.status(500).json({ message: 'Error getting request count' });
   }
@@ -146,7 +152,7 @@ app.get('/api/requests/count', async (req, res) => {
 
 // Basic route
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Cached Info API is running!',
     version: '1.0.0',
     endpoints: {
@@ -161,16 +167,16 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
+// Import error handler
+const errorHandler = require('./middleware/errorHandler');
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  res.status(404).json({ success: false, message: 'Route not found' });
 });
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
