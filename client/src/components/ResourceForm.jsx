@@ -11,7 +11,9 @@ const ResourceForm = () => {
         university: '',
         domain: '',
         subject: '',
+        skillCategory: '',
         skill: '',
+        examCategory: '',
         exam: ''
     });
 
@@ -21,6 +23,10 @@ const ResourceForm = () => {
     const [universities, setUniversities] = useState([]);
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
+    const [skillCategories, setSkillCategories] = useState([]);
+    const [skills, setSkills] = useState([]);
+    const [examCategories, setExamCategories] = useState([]);
+    const [exams, setExams] = useState([]);
 
     // Dropdown options
     const resourceTypes = [
@@ -29,17 +35,23 @@ const ResourceForm = () => {
         { value: 'competitive', label: 'Competitive Exam' }
     ];
 
-    // Fetch universities on component mount
+    // Fetch initial data on component mount
     useEffect(() => {
-        const fetchUniversities = async () => {
+        const fetchInitialData = async () => {
             try {
-                const res = await axios.get('/api/universities');
-                setUniversities(res.data);
+                const [universitiesRes, skillCategoriesRes, examCategoriesRes] = await Promise.all([
+                    axios.get('/api/universities'),
+                    axios.get('/api/skills/categories'),
+                    axios.get('/api/exams/categories')
+                ]);
+                setUniversities(universitiesRes.data);
+                setSkillCategories(skillCategoriesRes.data);
+                setExamCategories(examCategoriesRes.data);
             } catch (err) {
-                console.error('Error fetching universities:', err);
+                console.error('Error fetching initial data:', err);
             }
         };
-        fetchUniversities();
+        fetchInitialData();
     }, []);
 
     // Fetch domains when university changes
@@ -71,6 +83,36 @@ const ResourceForm = () => {
             fetchSubjects();
         }
     }, [formData.domain]);
+
+    // Fetch skills when skill category changes
+    useEffect(() => {
+        if (formData.skillCategory) {
+            const fetchSkills = async () => {
+                try {
+                    const res = await axios.get(`/api/skills/category/${formData.skillCategory}`);
+                    setSkills(res.data);
+                } catch (err) {
+                    console.error('Error fetching skills:', err);
+                }
+            };
+            fetchSkills();
+        }
+    }, [formData.skillCategory]);
+
+    // Fetch exams when exam category changes
+    useEffect(() => {
+        if (formData.examCategory) {
+            const fetchExams = async () => {
+                try {
+                    const res = await axios.get(`/api/exams/category/${formData.examCategory}`);
+                    setExams(res.data);
+                } catch (err) {
+                    console.error('Error fetching exams:', err);
+                }
+            };
+            fetchExams();
+        }
+    }, [formData.examCategory]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -107,12 +149,18 @@ const ResourceForm = () => {
                 newErrors.subject = 'Please select a subject';
             }
         } else if (formData.type === 'skill') {
-            if (!formData.skill.trim()) {
-                newErrors.skill = 'Skill name is required';
+            if (!formData.skillCategory) {
+                newErrors.skillCategory = 'Please select a skill category';
+            }
+            if (!formData.skill) {
+                newErrors.skill = 'Please select a skill';
             }
         } else if (formData.type === 'competitive') {
-            if (!formData.exam.trim()) {
-                newErrors.exam = 'Exam name is required';
+            if (!formData.examCategory) {
+                newErrors.examCategory = 'Please select an exam category';
+            }
+            if (!formData.exam) {
+                newErrors.exam = 'Please select an exam';
             }
         }
 
@@ -151,11 +199,15 @@ const ResourceForm = () => {
                 university: '',
                 domain: '',
                 subject: '',
+                skillCategory: '',
                 skill: '',
+                examCategory: '',
                 exam: ''
             }));
             setDomains([]);
             setSubjects([]);
+            setSkills([]);
+            setExams([]);
         } else if (name === 'university') {
             setFormData(prev => ({
                 ...prev,
@@ -168,6 +220,18 @@ const ResourceForm = () => {
                 ...prev,
                 subject: ''
             }));
+        } else if (name === 'skillCategory') {
+            setFormData(prev => ({
+                ...prev,
+                skill: ''
+            }));
+            setSkills([]);
+        } else if (name === 'examCategory') {
+            setFormData(prev => ({
+                ...prev,
+                exam: ''
+            }));
+            setExams([]);
         }
     };
 
@@ -323,11 +387,17 @@ const ResourceForm = () => {
                     )}
 
                     {formData.type === 'skill' && (
-                        renderField('skill', 'Skill Name', 'text')
+                        <>
+                            {renderField('skillCategory', 'Skill Category', 'select', skillCategories)}
+                            {formData.skillCategory && renderField('skill', 'Skill', 'select', skills)}
+                        </>
                     )}
 
                     {formData.type === 'competitive' && (
-                        renderField('exam', 'Exam Name', 'text')
+                        <>
+                            {renderField('examCategory', 'Exam Category', 'select', examCategories)}
+                            {formData.examCategory && renderField('exam', 'Exam', 'select', exams)}
+                        </>
                     )}
 
                     {errors.submit && (
@@ -348,7 +418,9 @@ const ResourceForm = () => {
                                     university: '',
                                     domain: '',
                                     subject: '',
+                                    skillCategory: '',
                                     skill: '',
+                                    examCategory: '',
                                     exam: ''
                                 });
                                 setErrors({});

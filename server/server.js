@@ -58,6 +58,28 @@ app.get('/api/domains', async (req, res) => {
   }
 });
 
+// Get domains for a specific university
+app.get('/api/universities/:id/domains', async (req, res) => {
+  try {
+    const Domain = require('./models/Domain');
+    const domains = await Domain.find({ university: req.params.id }).select('_id name');
+    res.json(domains);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching domains for university' });
+  }
+});
+
+// Get subjects for a specific domain
+app.get('/api/domains/:id/subjects', async (req, res) => {
+  try {
+    const Subject = require('./models/Subject');
+    const subjects = await Subject.find({ domain: req.params.id }).select('_id name');
+    res.json(subjects);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching subjects for domain' });
+  }
+});
+
 app.get('/api/subjects', async (req, res) => {
   try {
     const Subject = require('./models/Subject');
@@ -65,6 +87,70 @@ app.get('/api/subjects', async (req, res) => {
     res.json(subjects);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching subjects' });
+  }
+});
+
+// Skills API endpoints
+app.get('/api/skills', async (req, res) => {
+  try {
+    const Skill = require('./models/Skill');
+    const skills = await Skill.find().select('_id name category level');
+    res.json(skills);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching skills' });
+  }
+});
+
+// Get skills by category
+app.get('/api/skills/category/:category', async (req, res) => {
+  try {
+    const Skill = require('./models/Skill');
+    const skills = await Skill.find({ category: req.params.category }).select('_id name level');
+    res.json(skills);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching skills for category' });
+  }
+});
+
+// Get skill categories
+app.get('/api/skills/categories', async (req, res) => {
+  try {
+    const categories = ['Programming', 'Data Science', 'Web Development', 'Mobile Development', 'DevOps', 'Design', 'Business', 'Marketing'];
+    res.json(categories.map(cat => ({ name: cat, value: cat })));
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching skill categories' });
+  }
+});
+
+// Competitive Exams API endpoints
+app.get('/api/exams', async (req, res) => {
+  try {
+    const Exam = require('./models/Exam');
+    const exams = await Exam.find().select('_id name category level');
+    res.json(exams);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching exams' });
+  }
+});
+
+// Get exams by category
+app.get('/api/exams/category/:category', async (req, res) => {
+  try {
+    const Exam = require('./models/Exam');
+    const exams = await Exam.find({ category: req.params.category }).select('_id name level subjects');
+    res.json(exams);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching exams for category' });
+  }
+});
+
+// Get exam categories
+app.get('/api/exams/categories', async (req, res) => {
+  try {
+    const categories = ['Engineering', 'Medical', 'Management', 'Government', 'Banking', 'Teaching', 'Law', 'Other'];
+    res.json(categories.map(cat => ({ name: cat, value: cat })));
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching exam categories' });
   }
 });
 
