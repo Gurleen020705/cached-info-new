@@ -2,6 +2,7 @@
     min-height: 100vh;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     padding: 2rem 1rem;
+    position: relative;
 }
 
 .form-wrapper {
@@ -80,6 +81,14 @@
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 .form-textarea {
     resize: vertical;
     min-height: 100px;
@@ -90,30 +99,6 @@
     font-size: 0.875rem;
     margin-top: 0.5rem;
     font-weight: 500;
-}
-
-.success-message {
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.success-icon {
-    background: #10b981;
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 0.875rem;
 }
 
 .error-alert {
@@ -172,9 +157,236 @@
     border: 2px solid #e5e7eb;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
     background: #f9fafb;
     border-color: #d1d5db;
+}
+
+.btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Progress Modal Styles */
+.progress-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.progress-modal {
+    background: white;
+    border-radius: 16px;
+    padding: 3rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    animation: slideInUp 0.4s ease;
+}
+
+.progress-content h3 {
+    margin: 1.5rem 0 1rem 0;
+    color: #374151;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.progress-content p {
+    margin: 0.5rem 0 0 0;
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.progress-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.progress-icon.uploading {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+}
+
+.progress-icon.processing {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.progress-icon.success {
+    background: linear-gradient(135deg, #10b981, #047857);
+    color: white;
+}
+
+.progress-icon.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+/* Animations for progress icons */
+.upload-animation {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.processing-animation {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-left-color: white;
+    border-right-color: white;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.checkmark {
+    font-size: 2.5rem;
+    animation: bounceIn 0.6s ease;
+}
+
+.error-mark {
+    font-size: 2.5rem;
+    animation: shakeIn 0.6s ease;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    animation: shimmer 2s infinite;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shakeIn {
+    0% {
+        transform: rotate(0deg);
+        opacity: 0;
+    }
+
+    25% {
+        transform: rotate(-10deg);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: rotate(10deg);
+        opacity: 0.8;
+    }
+
+    75% {
+        transform: rotate(-5deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+
+    100% {
+        background-position: 200px 0;
+    }
 }
 
 /* Responsive Design */
@@ -208,6 +420,20 @@
     .btn {
         width: 100%;
     }
+
+    .progress-modal {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+    }
+
+    .progress-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .progress-content h3 {
+        font-size: 1.25rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -228,6 +454,27 @@
     .form-textarea {
         padding: 0.625rem 0.875rem;
         font-size: 0.95rem;
+    }
+
+    .progress-modal {
+        padding: 1.5rem;
+    }
+
+    .progress-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .upload-animation,
+    .processing-animation {
+        width: 24px;
+        height: 24px;
+    }
+
+    .checkmark,
+    .error-mark {
+        font-size: 2rem;
     }
 }
 
