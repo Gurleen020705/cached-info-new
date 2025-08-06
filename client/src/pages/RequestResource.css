@@ -1,6 +1,6 @@
 .request-form-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: white;
     padding: 2rem 1rem;
 }
 
@@ -14,7 +14,7 @@
 }
 
 .form-header {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 2.5rem 2rem;
     text-align: center;
@@ -80,7 +80,8 @@
 .form-select,
 .form-textarea {
     width: 100%;
-    padding: 0.875rem 1rem;
+    padding: .8rem 0rem;
+    padding-left: 1rem;
     border: 2px solid #e2e8f0;
     border-radius: 10px;
     font-size: 1rem;
