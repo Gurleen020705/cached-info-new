@@ -1,6 +1,10 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
+// Context
+import { AuthProvider } from './context/AuthContext';
+import { DataProvider, useData } from './context/DataContext';
+
 // Pages
 import HomePage from './pages/HomePage';
 import Resources from './pages/Resources';
@@ -16,16 +20,18 @@ import SignIn from './components/SignIn';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
 
-// Context
-import { AuthProvider } from './context/AuthContext';
-import { DataProvider, useData } from './context/DataContext';
+
 
 // App content component (separated to use data context)
 const AppContent = () => {
-  const { loading, error } = useData();
+  const { loading, error, initialLoadComplete } = useData();
 
   // Show loading screen while data is being fetched
-  if (loading) {
+  if (loading || !initialLoadComplete) {
+    return <LoadingScreen error={error} />;
+  }
+
+  if (error && !initialLoadComplete) {
     return <LoadingScreen error={error} />;
   }
 

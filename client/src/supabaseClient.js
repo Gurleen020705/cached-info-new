@@ -12,5 +12,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         storage: window.localStorage,
         // Set flowType to 'pkce' for better security
         flowType: 'pkce'
+    },
+    // Allow anonymous access
+    global: {
+        headers: {
+            'X-Client-Info': 'supabase-js-web'
+        }
     }
 });

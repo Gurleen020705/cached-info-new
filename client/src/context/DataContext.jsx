@@ -8,38 +8,91 @@ export const DataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [allResources, setAllResources] = useState([]);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-    // Fetch hierarchical data from Supabase
+    // Keys for localStorage
+    const STORAGE_KEYS = {
+        UNIVERSITIES: 'cachedinfo_universities',
+        RESOURCES: 'cachedinfo_resources',
+        LAST_FETCH: 'cachedinfo_last_fetch',
+        INITIAL_LOAD: 'cachedinfo_initial_load'
+    };
+
+    // Check if data is fresh (less than 24 hours old)
+    const isDataFresh = () => {
+        const lastFetch = localStorage.getItem(STORAGE_KEYS.LAST_FETCH);
+        if (!lastFetch) return false;
+
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        return (Date.now() - parseInt(lastFetch)) < twentyFourHours;
+    };
+
+    // Load data from localStorage
+    const loadFromStorage = () => {
+        try {
+            const storedUniversities = localStorage.getItem(STORAGE_KEYS.UNIVERSITIES);
+            const storedResources = localStorage.getItem(STORAGE_KEYS.RESOURCES);
+
+            if (storedUniversities && storedResources) {
+                const universities = JSON.parse(storedUniversities);
+                const resources = JSON.parse(storedResources);
+
+                setUniversities(universities);
+                setAllResources(resources);
+                return true;
+            }
+        } catch (error) {
+            console.error('Error loading data from storage:', error);
+        }
+        return false;
+    };
+
+    // Save data to localStorage
+    const saveToStorage = (universities, resources) => {
+        try {
+            localStorage.setItem(STORAGE_KEYS.UNIVERSITIES, JSON.stringify(universities));
+            localStorage.setItem(STORAGE_KEYS.RESOURCES, JSON.stringify(resources));
+            localStorage.setItem(STORAGE_KEYS.LAST_FETCH, Date.now().toString());
+            localStorage.setItem(STORAGE_KEYS.INITIAL_LOAD, 'true');
+        } catch (error) {
+            console.error('Error saving data to storage:', error);
+        }
+    };
+
+    // Fetch fresh data from Supabase
     const fetchUniversityData = async () => {
         try {
-            setLoading(true);
             setError(null);
 
-            // Fetch all data with relationships
             const { data: universitiesData, error: universitiesError } = await supabase
                 .from('universities')
                 .select(`
-          *,
-          domains (
-            *,
-            subjects (
-              *,
-              resources (
-                *
-              )
-            )
-          )
-        `);
+                    *,
+                    domains (
+                        *,
+                        subjects (
+                            *,
+                            resources (
+                                *
+                            )
+                        )
+                    )
+                `);
 
-            if (universitiesError) throw universitiesError;
-
-            if (!universitiesData || universitiesData.length === 0) {
-                setUniversities([]);
-                setAllResources([]);
-                return;
+            if (universitiesError) {
+                console.error('Universities fetch error:', universitiesError);
+                throw universitiesError;
             }
 
-            // Transform data to match the existing format
+            if (!universitiesData || universitiesData.length === 0) {
+                const emptyData = [];
+                setUniversities(emptyData);
+                setAllResources(emptyData);
+                saveToStorage(emptyData, emptyData);
+                return { universities: emptyData, resources: emptyData };
+            }
+
+            // Transform data to match existing format
             const transformedData = universitiesData.map(university => ({
                 _id: university.id,
                 name: university.name || 'Unknown University',
@@ -50,7 +103,7 @@ export const DataProvider = ({ children }) => {
                         _id: subject.id,
                         name: subject.name || 'Unknown Subject',
                         resources: (subject.resources || [])
-                            .filter(resource => resource && resource.is_approved) // Only approved resources
+                            .filter(resource => resource && resource.is_approved)
                             .map(resource => ({
                                 _id: resource.id,
                                 details: {
@@ -59,7 +112,7 @@ export const DataProvider = ({ children }) => {
                                     url: resource.url || '#'
                                 },
                                 submittedBy: {
-                                    name: 'Anonymous' // We'll fetch this separately if needed
+                                    name: 'Anonymous'
                                 },
                                 dateAdded: resource.created_at || new Date().toISOString()
                             }))
@@ -67,9 +120,7 @@ export const DataProvider = ({ children }) => {
                 }))
             }));
 
-            setUniversities(transformedData);
-
-            // Create flat resources array for search functionality
+            // Create flat resources array
             const flatResources = transformedData.reduce((acc, university) => {
                 university.domains.forEach(domain => {
                     domain.subjects.forEach(subject => {
@@ -101,94 +152,88 @@ export const DataProvider = ({ children }) => {
                 return acc;
             }, []);
 
+            setUniversities(transformedData);
             setAllResources(flatResources);
+
+            // Save to storage
+            saveToStorage(transformedData, flatResources);
+
+            return { universities: transformedData, resources: flatResources };
 
         } catch (err) {
             console.error('Error fetching university data:', err);
             setError(err.message);
-        } finally {
-            setLoading(false);
+            throw err;
         }
     };
 
-    // Fetch additional resource types (skills, competitive exams)
-    const fetchAdditionalResources = async () => {
-        try {
-            // For now, we'll skip additional resources to avoid the relationship error
-            // You can add this back once you have resources not tied to subjects
+    // Initialize data on app start
+    useEffect(() => {
+        const initializeData = async () => {
+            try {
+                setLoading(true);
 
-            // Example: If you want to fetch resources without subject_id
-            // const { data: generalResources, error } = await supabase
-            //   .from('resources')
-            //   .select('*')
-            //   .is('subject_id', null)
-            //   .eq('is_approved', true);
+                // Check if we have initial load completed before
+                const hasInitialLoad = localStorage.getItem(STORAGE_KEYS.INITIAL_LOAD);
 
-            // if (error) throw error;
+                // Try to load from storage first
+                const hasStoredData = loadFromStorage();
 
-            // const additionalResources = (generalResources || []).map(resource => ({
-            //   _id: resource.id,
-            //   title: resource.title || 'Untitled Resource',
-            //   description: resource.description || 'No description available',
-            //   url: resource.url || '#',
-            //   type: resource.type || 'general',
-            //   skill: resource.skill || null,
-            //   exam: resource.exam || null,
-            //   submittedBy: {
-            //     name: 'Anonymous'
-            //   },
-            //   dateAdded: resource.created_at || new Date().toISOString()
-            // }));
+                if (hasStoredData && isDataFresh() && hasInitialLoad) {
+                    // Use cached data if fresh
+                    console.log('Using cached data');
+                    setInitialLoadComplete(true);
+                } else {
+                    // Fetch fresh data
+                    console.log('Fetching fresh data');
+                    await fetchUniversityData();
+                    setInitialLoadComplete(true);
+                }
+            } catch (error) {
+                console.error('Failed to initialize data:', error);
 
-            // setAllResources(prev => [...prev, ...additionalResources]);
+                // Try to use cached data as fallback
+                const hasStoredData = loadFromStorage();
+                if (hasStoredData) {
+                    console.log('Using cached data as fallback');
+                    setInitialLoadComplete(true);
+                } else {
+                    setError('Failed to load resources. Please refresh the page.');
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        } catch (err) {
-            console.error('Error fetching additional resources:', err);
-            // Don't set error for this since it's optional
-        }
-    };
+        initializeData();
+    }, []);
 
     // Get stats
     const getStats = async () => {
         try {
-            // Get total resources count
             const { count: resourceCount, error: resourceError } = await supabase
                 .from('resources')
                 .select('*', { count: 'exact', head: true })
                 .eq('is_approved', true);
 
-            if (resourceError) {
-                console.error('Error fetching resource count:', resourceError);
-            }
-
-            // Get total users count
             const { count: userCount, error: userError } = await supabase
                 .from('user_profiles')
                 .select('*', { count: 'exact', head: true });
 
-            if (userError) {
-                console.error('Error fetching user count:', userError);
-            }
-
-            // Get total requests count
             const { count: requestCount, error: requestError } = await supabase
                 .from('user_resource_requests')
                 .select('*', { count: 'exact', head: true })
                 .eq('status', 'fulfilled');
 
-            if (requestError) {
-                console.error('Error fetching request count:', requestError);
-            }
-
             return {
-                totalResources: resourceCount || 0,
+                totalResources: resourceCount || allResources.length || 0,
                 totalUsers: userCount || 0,
                 totalRequests: requestCount || 0
             };
         } catch (err) {
             console.error('Error fetching stats:', err);
             return {
-                totalResources: 0,
+                totalResources: allResources.length || 0,
                 totalUsers: 0,
                 totalRequests: 0
             };
@@ -197,8 +242,9 @@ export const DataProvider = ({ children }) => {
 
     // Search resources
     const searchResources = (query, limit = 5) => {
-        if (!query || !query.trim()) return [];
-        if (!allResources || allResources.length === 0) return [];
+        if (!query || !query.trim() || !allResources || allResources.length === 0) {
+            return [];
+        }
 
         const searchTerm = query.toLowerCase();
         const filteredResults = allResources.filter(resource => {
@@ -209,9 +255,7 @@ export const DataProvider = ({ children }) => {
                 (resource.description && resource.description.toLowerCase().includes(searchTerm)) ||
                 (resource.subject && resource.subject.name && resource.subject.name.toLowerCase().includes(searchTerm)) ||
                 (resource.domain && resource.domain.name && resource.domain.name.toLowerCase().includes(searchTerm)) ||
-                (resource.university && resource.university.name && resource.university.name.toLowerCase().includes(searchTerm)) ||
-                (resource.skill && resource.skill.toLowerCase().includes(searchTerm)) ||
-                (resource.exam && resource.exam.toLowerCase().includes(searchTerm))
+                (resource.university && resource.university.name && resource.university.name.toLowerCase().includes(searchTerm))
             );
         });
 
@@ -228,12 +272,11 @@ export const DataProvider = ({ children }) => {
             .slice(0, limit);
     };
 
-    // Extract searchable terms for autocomplete
+    // Extract searchable terms
     const extractSearchableTerms = () => {
         const terms = new Set();
 
         if (!universities || universities.length === 0) {
-            // Add common terms even if no universities loaded
             const commonTerms = [
                 'algorithms', 'data structures', 'machine learning', 'artificial intelligence',
                 'database', 'networking', 'programming', 'software engineering',
@@ -254,7 +297,7 @@ export const DataProvider = ({ children }) => {
             return Array.from(terms);
         }
 
-        // Add university names
+        // Add university, domain, subject names
         universities.forEach(university => {
             if (university && university.name) {
                 terms.add({
@@ -263,7 +306,6 @@ export const DataProvider = ({ children }) => {
                     category: '🏫 University'
                 });
 
-                // Add domain names
                 if (university.domains) {
                     university.domains.forEach(domain => {
                         if (domain && domain.name) {
@@ -273,7 +315,6 @@ export const DataProvider = ({ children }) => {
                                 category: '🎯 Domain'
                             });
 
-                            // Add subject names
                             if (domain.subjects) {
                                 domain.subjects.forEach(subject => {
                                     if (subject && subject.name) {
@@ -283,7 +324,6 @@ export const DataProvider = ({ children }) => {
                                             category: '📖 Subject'
                                         });
 
-                                        // Add resource titles
                                         if (subject.resources) {
                                             subject.resources.forEach(resource => {
                                                 if (resource && resource.details && resource.details.title) {
@@ -304,47 +344,46 @@ export const DataProvider = ({ children }) => {
             }
         });
 
-        // Add common search terms
-        const commonTerms = [
-            'algorithms', 'data structures', 'machine learning', 'artificial intelligence',
-            'database', 'networking', 'programming', 'software engineering',
-            'calculus', 'linear algebra', 'statistics', 'probability',
-            'physics', 'chemistry', 'biology', 'mathematics',
-            'business', 'finance', 'marketing', 'management',
-            'engineering', 'computer science', 'electrical', 'mechanical'
-        ];
-
-        commonTerms.forEach(term => {
-            terms.add({
-                text: term,
-                type: 'general',
-                category: '🔍 General'
-            });
-        });
-
         return Array.from(terms);
     };
 
-    // Initialize data on mount
-    useEffect(() => {
-        const initializeData = async () => {
+    // Force refresh data
+    const refreshData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
             await fetchUniversityData();
-            await fetchAdditionalResources();
-        };
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            setError('Failed to refresh data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        initializeData();
-    }, []);
+    // Clear cached data
+    const clearCache = () => {
+        Object.values(STORAGE_KEYS).forEach(key => {
+            localStorage.removeItem(key);
+        });
+        setUniversities([]);
+        setAllResources([]);
+        setInitialLoadComplete(false);
+    };
 
     const value = {
         universities,
         allResources,
         loading,
         error,
+        initialLoadComplete,
         searchResources,
         getRecentResources,
         getStats,
         extractSearchableTerms,
-        refetchData: fetchUniversityData
+        refreshData,
+        clearCache,
+        refetchData: fetchUniversityData // Keep for backward compatibility
     };
 
     return (
