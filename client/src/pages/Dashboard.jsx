@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import './Dashboard.css';
 
 const Dashboard = () => {
     const { user, isAdmin } = useAuth();
@@ -168,7 +169,7 @@ const Dashboard = () => {
         }
     };
 
-    // CRUD Operations - FIXED
+    // CRUD Operations
     const handleCreate = async (type, data) => {
         try {
             const { error } = await supabase
@@ -188,7 +189,6 @@ const Dashboard = () => {
 
     const handleUpdate = async (type, id, data) => {
         try {
-            // Only add updated_at if the table has this column
             const updateData = { ...data };
             if (type === 'resources' || type === 'user_profiles') {
                 updateData.updated_at = new Date().toISOString();
@@ -236,10 +236,8 @@ const Dashboard = () => {
         setModalType(type);
         setEditingItem(item);
 
-        // Set form data properly for editing
         if (item) {
             const formDataCopy = { ...item };
-            // Remove joined data that shouldn't be in the form
             delete formDataCopy.subjects;
             delete formDataCopy.domains;
             delete formDataCopy.universities;
@@ -364,15 +362,15 @@ const Dashboard = () => {
                         break;
                     case 'domains':
                         await fetchDomains();
-                        await fetchUniversities(); // For dropdown
+                        await fetchUniversities();
                         break;
                     case 'subjects':
                         await fetchSubjects();
-                        await fetchDomains(); // For dropdown
+                        await fetchDomains();
                         break;
                     case 'resources':
                         await fetchResources();
-                        await fetchSubjects(); // For dropdown
+                        await fetchSubjects();
                         break;
                     default:
                         break;
@@ -402,57 +400,23 @@ const Dashboard = () => {
 
     if (!isAdmin()) {
         return (
-            <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '20px',
-                    padding: '48px',
-                    textAlign: 'center',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-                }}>
-                    <h2 style={{ color: '#ff6b6b', marginBottom: '16px', fontWeight: '700' }}>Access Denied</h2>
-                    <p style={{ color: 'rgba(255, 255, 255, 0.8)' }}>You don't have permission to access the admin dashboard.</p>
+            <div className="access-denied">
+                <div className="access-denied-content">
+                    <h2>Access Denied</h2>
+                    <p>You don't have permission to access the admin dashboard.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        }}>
+        <div className="dashboard-container">
             {/* Header */}
-            <div style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
-            }}>
-                <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0' }}>
-                        <h1 style={{
-                            background: 'linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text',
-                            fontWeight: 800,
-                            fontSize: '2rem',
-                            letterSpacing: '-0.025em'
-                        }}>
-                            Admin Dashboard
-                        </h1>
-                        <div style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            borderRadius: '12px',
-                            padding: '8px 16px',
-                            color: 'white',
-                            fontWeight: 500
-                        }}>
+            <div className="dashboard-header">
+                <div className="dashboard-header-content">
+                    <div className="dashboard-header-inner">
+                        <h1 className="dashboard-title">Admin Dashboard</h1>
+                        <div className="user-info">
                             Welcome, {user?.email}
                         </div>
                     </div>
@@ -460,20 +424,9 @@ const Dashboard = () => {
             </div>
 
             {/* Content Container */}
-            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
+            <div className="dashboard-content">
                 {/* Tabs */}
-                <div style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '16px',
-                    padding: '8px',
-                    margin: '24px 0',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '4px'
-                }}>
+                <div className="tab-navigation">
                     {[
                         { id: 'pending-resources', label: `Pending (${pendingResources.length})` },
                         { id: 'resources', label: `Resources (${resources.length})` },
@@ -485,22 +438,7 @@ const Dashboard = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            style={{
-                                position: 'relative',
-                                padding: '12px 20px',
-                                borderRadius: '12px',
-                                fontWeight: 600,
-                                fontSize: '0.875rem',
-                                border: 'none',
-                                background: activeTab === tab.id
-                                    ? 'rgba(255, 255, 255, 0.25)'
-                                    : 'transparent',
-                                color: activeTab === tab.id ? 'white' : 'rgba(255, 255, 255, 0.7)',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                transform: activeTab === tab.id ? 'translateY(-2px)' : 'translateY(0)',
-                                boxShadow: activeTab === tab.id ? '0 6px 20px rgba(255, 255, 255, 0.2)' : 'none'
-                            }}
+                            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                         >
                             {tab.label}
                         </button>
@@ -509,206 +447,73 @@ const Dashboard = () => {
 
                 {/* Notifications */}
                 {success && (
-                    <div style={{
-                        padding: '16px 20px',
-                        borderRadius: '12px',
-                        marginBottom: '16px',
-                        fontWeight: 500,
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(72, 187, 120, 0.4)',
-                        background: 'rgba(72, 187, 120, 0.2)',
-                        color: '#22c55e'
-                    }}>
+                    <div className="notification notification-success">
                         {success}
                     </div>
                 )}
 
                 {error && (
-                    <div style={{
-                        padding: '16px 20px',
-                        borderRadius: '12px',
-                        marginBottom: '16px',
-                        fontWeight: 500,
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(248, 113, 113, 0.4)',
-                        background: 'rgba(248, 113, 113, 0.2)',
-                        color: '#ff6b6b'
-                    }}>
+                    <div className="notification notification-error">
                         {error}
                     </div>
                 )}
 
                 {/* Content */}
-                <div style={{ padding: '2rem 0' }}>
+                <div className="content-section">
                     {loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '16rem' }}>
-                            <div style={{
-                                width: '48px',
-                                height: '48px',
-                                border: '4px solid rgba(255, 255, 255, 0.3)',
-                                borderLeft: '4px solid white',
-                                borderRadius: '50%',
-                                animation: 'spin 1s linear infinite'
-                            }}></div>
+                        <div className="loading-spinner">
+                            <div className="spinner"></div>
                         </div>
                     ) : (
                         <>
                             {/* Pending Resources Tab */}
                             {activeTab === 'pending-resources' && (
                                 <div>
-                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '1.5rem' }}>
-                                        Pending Resource Submissions
-                                    </h2>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Pending Resource Submissions</h2>
+                                    </div>
 
                                     {pendingResources.length === 0 ? (
-                                        <div style={{
-                                            textAlign: 'center',
-                                            padding: '64px 24px',
-                                            color: 'rgba(255, 255, 255, 0.7)'
-                                        }}>
-                                            <p style={{ fontSize: '1.125rem' }}>No pending resources to review</p>
+                                        <div className="empty-state">
+                                            <p>No pending resources to review</p>
                                         </div>
                                     ) : (
-                                        <div style={{
-                                            background: 'rgba(255, 255, 255, 0.15)',
-                                            backdropFilter: 'blur(10px)',
-                                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                                            borderRadius: '20px',
-                                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                            overflow: 'hidden'
-                                        }}>
+                                        <div className="dashboard-card">
                                             {pendingResources.map((resource, index) => (
-                                                <div key={resource.id} style={{
-                                                    padding: '24px',
-                                                    borderBottom: index < pendingResources.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                    transition: 'all 0.3s ease'
-                                                }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                        <div style={{ flex: '1', minWidth: '0' }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                                <h3 style={{
-                                                                    color: 'white',
-                                                                    fontWeight: 700,
-                                                                    fontSize: '1.125rem',
-                                                                    marginBottom: '8px'
-                                                                }}>
-                                                                    {resource.title}
-                                                                </h3>
-                                                                <span style={{
-                                                                    padding: '6px 12px',
-                                                                    borderRadius: '20px',
-                                                                    fontSize: '0.75rem',
-                                                                    fontWeight: 600,
-                                                                    textTransform: 'uppercase',
-                                                                    letterSpacing: '0.025em',
-                                                                    border: '1px solid rgba(255, 193, 7, 0.4)',
-                                                                    backdropFilter: 'blur(10px)',
-                                                                    background: 'rgba(255, 193, 7, 0.2)',
-                                                                    color: '#ffd60a'
-                                                                }}>
-                                                                    Pending Review
-                                                                </span>
-                                                            </div>
-                                                            <p style={{
-                                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                                fontSize: '0.875rem',
-                                                                lineHeight: 1.5,
-                                                                marginBottom: '12px'
-                                                            }}>
+                                                <div key={resource.id} className="content-item">
+                                                    <div className="content-header">
+                                                        <div className="content-info">
+                                                            <h3 className="content-title">{resource.title}</h3>
+                                                            <p className="content-description">
                                                                 {resource.description || 'No description provided'}
                                                             </p>
                                                             {resource.url && (
-                                                                <p style={{ marginBottom: '12px' }}>
-                                                                    <a href={resource.url} target="_blank" rel="noopener noreferrer" style={{
-                                                                        color: '#60a5fa',
-                                                                        textDecoration: 'none',
-                                                                        fontSize: '0.875rem',
-                                                                        fontWeight: 500,
-                                                                        transition: 'all 0.3s ease'
-                                                                    }}>
+                                                                <div className="content-url">
+                                                                    <a href={resource.url} target="_blank" rel="noopener noreferrer">
                                                                         {resource.url}
                                                                     </a>
-                                                                </p>
+                                                                </div>
                                                             )}
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                gap: '16px',
-                                                                fontSize: '0.75rem',
-                                                                color: 'rgba(255, 255, 255, 0.6)',
-                                                                marginBottom: '16px',
-                                                                flexWrap: 'wrap'
-                                                            }}>
-                                                                <span style={{
-                                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                                    padding: '4px 8px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                                                                }}>
-                                                                    Subject: {resource.subjects?.name}
-                                                                </span>
-                                                                <span style={{
-                                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                                    padding: '4px 8px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                                                                }}>
-                                                                    Domain: {resource.subjects?.domains?.name}
-                                                                </span>
-                                                                <span style={{
-                                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                                    padding: '4px 8px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                                                                }}>
-                                                                    University: {resource.subjects?.domains?.universities?.name}
-                                                                </span>
+                                                            <div className="content-meta">
+                                                                <span className="meta-tag">Subject: {resource.subjects?.name}</span>
+                                                                <span className="meta-tag">Domain: {resource.subjects?.domains?.name}</span>
+                                                                <span className="meta-tag">University: {resource.subjects?.domains?.universities?.name}</span>
                                                             </div>
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                gap: '16px',
-                                                                fontSize: '0.75rem',
-                                                                color: 'rgba(255, 255, 255, 0.6)',
-                                                                flexWrap: 'wrap'
-                                                            }}>
-                                                                <span style={{
-                                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                                    padding: '4px 8px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                                                                }}>
-                                                                    Submitted by: {resource.user_profiles?.full_name || 'Anonymous'}
-                                                                </span>
-                                                                <span style={{
-                                                                    background: 'rgba(255, 255, 255, 0.1)',
-                                                                    padding: '4px 8px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                                                                }}>
-                                                                    Date: {new Date(resource.created_at).toLocaleDateString()}
-                                                                </span>
+                                                            <div className="content-meta">
+                                                                <span className="meta-tag">Submitted by: {resource.user_profiles?.full_name || 'Anonymous'}</span>
+                                                                <span className="meta-tag">Date: {new Date(resource.created_at).toLocaleDateString()}</span>
                                                             </div>
                                                         </div>
-                                                        <div style={{ marginLeft: '1rem' }}>
+                                                        <div className="content-actions">
+                                                            <span className="status-badge status-pending">Pending Review</span>
                                                             <select
                                                                 value="pending"
                                                                 onChange={(e) => handleApprovalStatusChange(resource.id, e.target.value)}
-                                                                style={{
-                                                                    padding: '10px 14px',
-                                                                    borderRadius: '10px',
-                                                                    background: 'rgba(255, 255, 255, 0.2)',
-                                                                    backdropFilter: 'blur(10px)',
-                                                                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                                                                    color: 'white',
-                                                                    fontWeight: 600,
-                                                                    fontSize: '0.875rem',
-                                                                    cursor: 'pointer',
-                                                                    minWidth: '140px',
-                                                                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
-                                                                }}
+                                                                className="form-select"
                                                             >
-                                                                <option value="pending" style={{ color: '#333' }}>Pending</option>
-                                                                <option value="approved" style={{ color: '#333' }}>✓ Approve</option>
-                                                                <option value="denied" style={{ color: '#333' }}>✗ Deny</option>
+                                                                <option value="pending">Pending</option>
+                                                                <option value="approved">✓ Approve</option>
+                                                                <option value="denied">✗ Deny</option>
                                                             </select>
                                                         </div>
                                                     </div>
@@ -722,89 +527,42 @@ const Dashboard = () => {
                             {/* Universities Tab */}
                             {activeTab === 'universities' && (
                                 <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white' }}>
-                                            Universities Management
-                                        </h2>
-                                        <button
-                                            onClick={() => openModal('universities')}
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '12px',
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                background: 'rgba(34, 197, 94, 0.8)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                        >
-                                            + Add University
-                                        </button>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Universities Management</h2>
+                                        <div className="section-actions">
+                                            <button
+                                                onClick={() => openModal('universities')}
+                                                className="btn btn-primary"
+                                            >
+                                                + Add University
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                        overflow: 'hidden'
-                                    }}>
+                                    <div className="dashboard-card">
                                         {universities.map((university, index) => (
-                                            <div key={university.id} style={{
-                                                padding: '24px',
-                                                borderBottom: index < universities.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div>
-                                                    <h3 style={{
-                                                        fontWeight: 700,
-                                                        fontSize: '1.125rem',
-                                                        color: 'white',
-                                                        marginBottom: '8px'
-                                                    }}>
-                                                        {university.name}
-                                                    </h3>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
-                                                        Created: {new Date(university.created_at).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => openModal('universities', university)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(59, 130, 246, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete('universities', university.id, university.name)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                            <div key={university.id} className="content-item">
+                                                <div className="content-header">
+                                                    <div className="content-info">
+                                                        <h3 className="content-title">{university.name}</h3>
+                                                        <p className="content-description">
+                                                            Created: {new Date(university.created_at).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="content-actions">
+                                                        <button
+                                                            onClick={() => openModal('universities', university)}
+                                                            className="btn btn-secondary"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete('universities', university.id, university.name)}
+                                                            className="btn btn-danger"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -815,92 +573,45 @@ const Dashboard = () => {
                             {/* Domains Tab */}
                             {activeTab === 'domains' && (
                                 <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white' }}>
-                                            Domains Management
-                                        </h2>
-                                        <button
-                                            onClick={() => openModal('domains')}
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '12px',
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                background: 'rgba(34, 197, 94, 0.8)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                        >
-                                            + Add Domain
-                                        </button>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Domains Management</h2>
+                                        <div className="section-actions">
+                                            <button
+                                                onClick={() => openModal('domains')}
+                                                className="btn btn-primary"
+                                            >
+                                                + Add Domain
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                        overflow: 'hidden'
-                                    }}>
+                                    <div className="dashboard-card">
                                         {domains.map((domain, index) => (
-                                            <div key={domain.id} style={{
-                                                padding: '24px',
-                                                borderBottom: index < domains.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div>
-                                                    <h3 style={{
-                                                        fontWeight: 700,
-                                                        fontSize: '1.125rem',
-                                                        color: 'white',
-                                                        marginBottom: '8px'
-                                                    }}>
-                                                        {domain.name}
-                                                    </h3>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                                                        University: {domain.universities?.name}
-                                                    </p>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
-                                                        Created: {new Date(domain.created_at).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => openModal('domains', domain)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(59, 130, 246, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete('domains', domain.id, domain.name)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                            <div key={domain.id} className="content-item">
+                                                <div className="content-header">
+                                                    <div className="content-info">
+                                                        <h3 className="content-title">{domain.name}</h3>
+                                                        <p className="content-description">
+                                                            University: {domain.universities?.name}
+                                                        </p>
+                                                        <p className="content-description">
+                                                            Created: {new Date(domain.created_at).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="content-actions">
+                                                        <button
+                                                            onClick={() => openModal('domains', domain)}
+                                                            className="btn btn-secondary"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete('domains', domain.id, domain.name)}
+                                                            className="btn btn-danger"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -911,95 +622,48 @@ const Dashboard = () => {
                             {/* Subjects Tab */}
                             {activeTab === 'subjects' && (
                                 <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white' }}>
-                                            Subjects Management
-                                        </h2>
-                                        <button
-                                            onClick={() => openModal('subjects')}
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '12px',
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                background: 'rgba(34, 197, 94, 0.8)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                        >
-                                            + Add Subject
-                                        </button>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Subjects Management</h2>
+                                        <div className="section-actions">
+                                            <button
+                                                onClick={() => openModal('subjects')}
+                                                className="btn btn-primary"
+                                            >
+                                                + Add Subject
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                        overflow: 'hidden'
-                                    }}>
+                                    <div className="dashboard-card">
                                         {subjects.map((subject, index) => (
-                                            <div key={subject.id} style={{
-                                                padding: '24px',
-                                                borderBottom: index < subjects.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div>
-                                                    <h3 style={{
-                                                        fontWeight: 700,
-                                                        fontSize: '1.125rem',
-                                                        color: 'white',
-                                                        marginBottom: '8px'
-                                                    }}>
-                                                        {subject.name}
-                                                    </h3>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                                                        Domain: {subject.domains?.name}
-                                                    </p>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                                                        University: {subject.domains?.universities?.name}
-                                                    </p>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
-                                                        Created: {new Date(subject.created_at).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => openModal('subjects', subject)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(59, 130, 246, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete('subjects', subject.id, subject.name)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                            <div key={subject.id} className="content-item">
+                                                <div className="content-header">
+                                                    <div className="content-info">
+                                                        <h3 className="content-title">{subject.name}</h3>
+                                                        <p className="content-description">
+                                                            Domain: {subject.domains?.name}
+                                                        </p>
+                                                        <p className="content-description">
+                                                            University: {subject.domains?.universities?.name}
+                                                        </p>
+                                                        <p className="content-description">
+                                                            Created: {new Date(subject.created_at).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="content-actions">
+                                                        <button
+                                                            onClick={() => openModal('subjects', subject)}
+                                                            className="btn btn-secondary"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete('subjects', subject.id, subject.name)}
+                                                            className="btn btn-danger"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -1010,100 +674,45 @@ const Dashboard = () => {
                             {/* Resources Tab */}
                             {activeTab === 'resources' && (
                                 <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                        <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white' }}>
-                                            Resources Management
-                                        </h2>
-                                        <button
-                                            onClick={() => openModal('resources')}
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '12px',
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                background: 'rgba(34, 197, 94, 0.8)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)',
-                                                transition: 'all 0.3s ease'
-                                            }}
-                                        >
-                                            + Add Resource
-                                        </button>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Resources Management</h2>
+                                        <div className="section-actions">
+                                            <button
+                                                onClick={() => openModal('resources')}
+                                                className="btn btn-primary"
+                                            >
+                                                + Add Resource
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                        overflow: 'hidden'
-                                    }}>
+                                    <div className="dashboard-card">
                                         {resources.map((resource, index) => (
-                                            <div key={resource.id} style={{
-                                                padding: '24px',
-                                                borderBottom: index < resources.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <h3 style={{
-                                                        fontWeight: 700,
-                                                        fontSize: '1.125rem',
-                                                        color: 'white',
-                                                        marginBottom: '8px'
-                                                    }}>
-                                                        {resource.title}
-                                                    </h3>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem', marginBottom: '8px' }}>
-                                                        {resource.description}
-                                                    </p>
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        gap: '16px',
-                                                        fontSize: '0.75rem',
-                                                        color: 'rgba(255, 255, 255, 0.6)',
-                                                        flexWrap: 'wrap'
-                                                    }}>
-                                                        <span>Subject: {resource.subjects?.name}</span>
-                                                        <span>Domain: {resource.subjects?.domains?.name}</span>
-                                                        <span>University: {resource.subjects?.domains?.universities?.name}</span>
+                                            <div key={resource.id} className="content-item">
+                                                <div className="content-header">
+                                                    <div className="content-info">
+                                                        <h3 className="content-title">{resource.title}</h3>
+                                                        <p className="content-description">{resource.description}</p>
+                                                        <div className="content-meta">
+                                                            <span className="meta-tag">Subject: {resource.subjects?.name}</span>
+                                                            <span className="meta-tag">Domain: {resource.subjects?.domains?.name}</span>
+                                                            <span className="meta-tag">University: {resource.subjects?.domains?.universities?.name}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => openModal('resources', resource)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(59, 130, 246, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete('resources', resource.id, resource.title)}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '8px',
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.8)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <div className="content-actions">
+                                                        <button
+                                                            onClick={() => openModal('resources', resource)}
+                                                            className="btn btn-secondary"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete('resources', resource.id, resource.title)}
+                                                            className="btn btn-danger"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -1114,81 +723,38 @@ const Dashboard = () => {
                             {/* Users Tab */}
                             {activeTab === 'users' && (
                                 <div>
-                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '1.5rem' }}>
-                                        Registered Users
-                                    </h2>
+                                    <div className="section-header">
+                                        <h2 className="section-title">Registered Users</h2>
+                                    </div>
 
-                                    <div style={{
-                                        background: 'rgba(255, 255, 255, 0.15)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                                        overflow: 'hidden'
-                                    }}>
+                                    <div className="dashboard-card">
                                         {users.map((user, index) => (
-                                            <div key={user.id} style={{
-                                                padding: '24px',
-                                                borderBottom: index < users.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                        <h3 style={{
-                                                            fontWeight: 700,
-                                                            fontSize: '1.125rem',
-                                                            color: 'white',
-                                                            marginRight: '12px'
-                                                        }}>
-                                                            {user.full_name || 'No name provided'}
-                                                        </h3>
-                                                        <span style={{
-                                                            padding: '6px 12px',
-                                                            borderRadius: '20px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: 600,
-                                                            textTransform: 'uppercase',
-                                                            letterSpacing: '0.025em',
-                                                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                                                            backdropFilter: 'blur(10px)',
-                                                            background: user.role === 'admin'
-                                                                ? 'rgba(34, 197, 94, 0.3)'
-                                                                : 'rgba(255, 255, 255, 0.2)',
-                                                            color: user.role === 'admin' ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'
-                                                        }}>
-                                                            {user.role}
-                                                        </span>
+                                            <div key={user.id} className="content-item">
+                                                <div className="content-header">
+                                                    <div className="content-info">
+                                                        <div className="user-header">
+                                                            <h3 className="content-title">{user.full_name || 'No name provided'}</h3>
+                                                            <span className={`status-badge ${user.role === 'admin' ? 'status-admin' : 'status-user'}`}>
+                                                                {user.role}
+                                                            </span>
+                                                        </div>
+                                                        <p className="content-description">
+                                                            User ID: {user.id}
+                                                        </p>
+                                                        <p className="content-description">
+                                                            Joined: {new Date(user.created_at).toLocaleDateString()}
+                                                        </p>
                                                     </div>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem', marginBottom: '4px' }}>
-                                                        User ID: {user.id}
-                                                    </p>
-                                                    <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.875rem' }}>
-                                                        Joined: {new Date(user.created_at).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <select
-                                                        value={user.role}
-                                                        onChange={(e) => updateUserRole(user.id, e.target.value)}
-                                                        style={{
-                                                            padding: '10px 14px',
-                                                            borderRadius: '10px',
-                                                            background: 'rgba(255, 255, 255, 0.2)',
-                                                            backdropFilter: 'blur(10px)',
-                                                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                                                            color: 'white',
-                                                            fontWeight: 600,
-                                                            fontSize: '0.875rem',
-                                                            cursor: 'pointer',
-                                                            minWidth: '120px',
-                                                            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
-                                                        }}
-                                                    >
-                                                        <option value="user" style={{ color: '#333' }}>User</option>
-                                                        <option value="admin" style={{ color: '#333' }}>Admin</option>
-                                                    </select>
+                                                    <div className="content-actions">
+                                                        <select
+                                                            value={user.role}
+                                                            onChange={(e) => updateUserRole(user.id, e.target.value)}
+                                                            className="form-select"
+                                                        >
+                                                            <option value="user">User</option>
+                                                            <option value="admin">Admin</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -1202,73 +768,26 @@ const Dashboard = () => {
 
             {/* Modal */}
             {showModal && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    backdropFilter: 'blur(4px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: '20px',
-                        padding: '32px',
-                        width: '90%',
-                        maxWidth: '500px',
-                        maxHeight: '90vh',
-                        overflow: 'auto',
-                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{
-                                fontSize: '1.5rem',
-                                fontWeight: 700,
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text'
-                            }}>
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3 className="modal-title">
                                 {editingItem ? 'Edit' : 'Add'} {modalType.slice(0, -1).charAt(0).toUpperCase() + modalType.slice(1, -1)}
                             </h3>
-                            <button
-                                onClick={closeModal}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '24px',
-                                    cursor: 'pointer',
-                                    color: '#6b7280',
-                                    padding: '4px'
-                                }}
-                            >
-                                ×
-                            </button>
+                            <button onClick={closeModal} className="modal-close">×</button>
                         </div>
 
-                        <div>
+                        <div className="modal-body">
                             {/* University Form */}
                             {modalType === 'universities' && (
-                                <div style={{ marginBottom: '20px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                        University Name
-                                    </label>
+                                <div className="form-group">
+                                    <label className="form-label">University Name</label>
                                     <input
                                         type="text"
                                         value={formData.name || ''}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
-                                        style={{
-                                            width: '100%',
-                                            padding: '12px',
-                                            borderRadius: '12px',
-                                            border: '2px solid rgba(0, 0, 0, 0.1)',
-                                            fontSize: '16px',
-                                            background: 'rgba(255, 255, 255, 0.8)'
-                                        }}
+                                        className="form-input"
                                         placeholder="Enter university name"
                                     />
                                 </div>
@@ -1277,42 +796,24 @@ const Dashboard = () => {
                             {/* Domain Form */}
                             {modalType === 'domains' && (
                                 <>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Domain Name
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Domain Name</label>
                                         <input
                                             type="text"
                                             value={formData.name || ''}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-input"
                                             placeholder="Enter domain name"
                                         />
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            University
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">University</label>
                                         <select
                                             value={formData.university_id || ''}
                                             onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-select"
                                         >
                                             <option value="">Select University</option>
                                             {universities.map(uni => (
@@ -1326,42 +827,24 @@ const Dashboard = () => {
                             {/* Subject Form */}
                             {modalType === 'subjects' && (
                                 <>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Subject Name
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Subject Name</label>
                                         <input
                                             type="text"
                                             value={formData.name || ''}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-input"
                                             placeholder="Enter subject name"
                                         />
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Domain
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Domain</label>
                                         <select
                                             value={formData.domain_id || ''}
                                             onChange={(e) => setFormData({ ...formData, domain_id: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-select"
                                         >
                                             <option value="">Select Domain</option>
                                             {domains.map(domain => (
@@ -1377,81 +860,44 @@ const Dashboard = () => {
                             {/* Resource Form */}
                             {modalType === 'resources' && (
                                 <>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Resource Title
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Resource Title</label>
                                         <input
                                             type="text"
                                             value={formData.title || ''}
                                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-input"
                                             placeholder="Enter resource title"
                                         />
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Description
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Description</label>
                                         <textarea
                                             value={formData.description || ''}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                             rows="3"
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)',
-                                                resize: 'vertical'
-                                            }}
+                                            className="form-textarea"
                                             placeholder="Enter resource description"
                                         />
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            URL
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">URL</label>
                                         <input
                                             type="url"
                                             value={formData.url || ''}
                                             onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-input"
                                             placeholder="Enter resource URL"
                                         />
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#374151' }}>
-                                            Subject
-                                        </label>
+                                    <div className="form-group">
+                                        <label className="form-label">Subject</label>
                                         <select
                                             value={formData.subject_id || ''}
                                             onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                borderRadius: '12px',
-                                                border: '2px solid rgba(0, 0, 0, 0.1)',
-                                                fontSize: '16px',
-                                                background: 'rgba(255, 255, 255, 0.8)'
-                                            }}
+                                            className="form-select"
                                         >
                                             <option value="">Select Subject</option>
                                             {subjects.map(subject => (
@@ -1461,13 +907,13 @@ const Dashboard = () => {
                                             ))}
                                         </select>
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <label style={{ display: 'flex', alignItems: 'center', fontWeight: 600, color: '#374151' }}>
+                                    <div className="form-group">
+                                        <label className="form-checkbox-group">
                                             <input
                                                 type="checkbox"
                                                 checked={formData.is_approved || false}
                                                 onChange={(e) => setFormData({ ...formData, is_approved: e.target.checked })}
-                                                style={{ marginRight: '8px' }}
+                                                className="form-checkbox"
                                             />
                                             Approved
                                         </label>
@@ -1475,36 +921,11 @@ const Dashboard = () => {
                                 </>
                             )}
 
-                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '32px' }}>
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    style={{
-                                        padding: '12px 24px',
-                                        borderRadius: '12px',
-                                        border: '2px solid #d1d5db',
-                                        background: 'white',
-                                        color: '#6b7280',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                >
+                            <div className="modal-actions">
+                                <button type="button" onClick={closeModal} className="btn-cancel">
                                     Cancel
                                 </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    style={{
-                                        padding: '12px 24px',
-                                        borderRadius: '12px',
-                                        border: 'none',
-                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                        color: 'white',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                >
+                                <button onClick={handleSubmit} className="btn-submit">
                                     {editingItem ? 'Update' : 'Create'}
                                 </button>
                             </div>
@@ -1512,13 +933,6 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
-
-            <style jsx>{`
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `}</style>
         </div>
     );
 };
