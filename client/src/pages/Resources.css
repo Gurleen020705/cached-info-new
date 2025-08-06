@@ -95,7 +95,7 @@
 }
 
 .resource-card {
-    background: white;
+    background: linear-gradient(135deg, #e3e4e7 0%, #eae6e6 100%);
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
@@ -171,7 +171,7 @@
 .resource-title {
     margin: 0 0 1rem 0;
     font-size: 1.2rem;
-    color: #333;
+    color: #000000;
     line-height: 1.4;
 }
 

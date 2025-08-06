@@ -16,32 +16,60 @@ const Dashboard = () => {
     // Fetch pending resources with user details
     const fetchPendingResources = async () => {
         try {
-            const { data, error } = await supabase
+            // First, fetch the resources without user profiles
+            const { data: resources, error: resourcesError } = await supabase
                 .from('resources')
                 .select(`
-                    *,
-                    subjects (
+                *,
+                subjects (
+                    name,
+                    domains (
                         name,
-                        domains (
-                            name,
-                            universities (name)
-                        )
-                    ),
-                    user_profiles!resources_submitted_by_fkey (
-                        full_name
+                        universities (name)
                     )
-                `)
+                )
+            `)
                 .eq('is_approved', false)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setPendingResources(data || []);
+            if (resourcesError) throw resourcesError;
+
+            // Get unique user IDs from resources
+            const userIds = [...new Set(resources?.map(r => r.submitted_by).filter(Boolean))];
+
+            let userProfiles = [];
+            if (userIds.length > 0) {
+                // Fetch user profiles for these IDs
+                const { data: profiles, error: profilesError } = await supabase
+                    .from('user_profiles')
+                    .select('id, full_name')
+                    .in('id', userIds);
+
+                if (profilesError) {
+                    console.warn('Error fetching user profiles:', profilesError);
+                } else {
+                    userProfiles = profiles || [];
+                }
+            }
+
+            // Create a map of user profiles for easy lookup
+            const profileMap = {};
+            userProfiles.forEach(profile => {
+                profileMap[profile.id] = profile;
+            });
+
+            // Combine resources with user profiles
+            const resourcesWithUsers = (resources || []).map(resource => ({
+                ...resource,
+                user_profiles: resource.submitted_by ? profileMap[resource.submitted_by] : null
+            }));
+
+            setPendingResources(resourcesWithUsers);
         } catch (err) {
             console.error('Error fetching pending resources:', err);
             setError('Failed to fetch pending resources');
         }
     };
-
     // Fetch all users
     const fetchUsers = async () => {
         try {
@@ -58,45 +86,52 @@ const Dashboard = () => {
         }
     };
 
-    // Approve resource
-    const approveResource = async (resourceId) => {
-        try {
-            const { error } = await supabase
-                .from('resources')
-                .update({ is_approved: true, updated_at: new Date().toISOString() })
-                .eq('id', resourceId);
-
-            if (error) throw error;
-
-            setSuccess('Resource approved successfully');
-            fetchPendingResources(); // Refresh list
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (err) {
-            console.error('Error approving resource:', err);
-            setError('Failed to approve resource');
-            setTimeout(() => setError(null), 3000);
+    // Handle approval status change
+    const handleApprovalStatusChange = async (resourceId, newStatus) => {
+        if (newStatus === 'pending') {
+            return; // Already pending, no action needed
         }
-    };
 
-    // Reject/Delete resource
-    const rejectResource = async (resourceId) => {
-        if (!window.confirm('Are you sure you want to reject and delete this resource?')) return;
+        if (newStatus === 'approved') {
+            try {
+                const { error } = await supabase
+                    .from('resources')
+                    .update({ is_approved: true, updated_at: new Date().toISOString() })
+                    .eq('id', resourceId);
 
-        try {
-            const { error } = await supabase
-                .from('resources')
-                .delete()
-                .eq('id', resourceId);
+                if (error) throw error;
 
-            if (error) throw error;
+                setSuccess('Resource approved successfully');
+                fetchPendingResources(); // Refresh list
+                setTimeout(() => setSuccess(null), 3000);
+            } catch (err) {
+                console.error('Error approving resource:', err);
+                setError('Failed to approve resource');
+                setTimeout(() => setError(null), 3000);
+            }
+        }
 
-            setSuccess('Resource rejected and removed');
-            fetchPendingResources(); // Refresh list
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (err) {
-            console.error('Error rejecting resource:', err);
-            setError('Failed to reject resource');
-            setTimeout(() => setError(null), 3000);
+        if (newStatus === 'denied') {
+            if (!window.confirm('Are you sure you want to deny and delete this resource?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('resources')
+                    .delete()
+                    .eq('id', resourceId);
+
+                if (error) throw error;
+
+                setSuccess('Resource denied and removed');
+                fetchPendingResources(); // Refresh list
+                setTimeout(() => setSuccess(null), 3000);
+            } catch (err) {
+                console.error('Error denying resource:', err);
+                setError('Failed to deny resource');
+                setTimeout(() => setError(null), 3000);
+            }
         }
     };
 
@@ -222,12 +257,19 @@ const Dashboard = () => {
                                                                     {resource.title}
                                                                 </h3>
                                                                 <span className="status-badge status-pending">
-                                                                    Pending
+                                                                    Pending Review
                                                                 </span>
                                                             </div>
                                                             <p className="resource-description">
                                                                 {resource.description || 'No description provided'}
                                                             </p>
+                                                            {resource.url && (
+                                                                <p className="resource-url">
+                                                                    <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                                                                        {resource.url}
+                                                                    </a>
+                                                                </p>
+                                                            )}
                                                             <div className="resource-meta">
                                                                 <span>
                                                                     Subject: {resource.subjects?.name}
@@ -248,19 +290,17 @@ const Dashboard = () => {
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <div style={{ marginLeft: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                                            <button
-                                                                onClick={() => approveResource(resource.id)}
-                                                                className="btn btn-approve"
+                                                        <div style={{ marginLeft: '1rem' }}>
+                                                            <select
+                                                                value="pending"
+                                                                onChange={(e) => handleApprovalStatusChange(resource.id, e.target.value)}
+                                                                className="approval-select"
+                                                                title="Change approval status"
                                                             >
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                onClick={() => rejectResource(resource.id)}
-                                                                className="btn btn-reject"
-                                                            >
-                                                                Reject
-                                                            </button>
+                                                                <option value="pending">Pending</option>
+                                                                <option value="approved">✓ Approve</option>
+                                                                <option value="denied">✗ Deny</option>
+                                                            </select>
                                                         </div>
                                                     </div>
                                                 </div>
