@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './LoadingScreen.css';
 
+const steps = [
+    { icon: '🔍', text: 'Checking Cache', duration: 500 },
+    { icon: '🏫', text: 'Loading Universities', duration: 1500 },
+    { icon: '📚', text: 'Organizing Resources', duration: 1000 },
+    { icon: '✨', text: 'Preparing Interface', duration: 800 }
+];
+
 const LoadingScreen = ({ error }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [progress, setProgress] = useState(0);
 
-    const steps = [
-        { icon: '🔍', text: 'Checking Cache', duration: 500 },
-        { icon: '🏫', text: 'Loading Universities', duration: 1500 },
-        { icon: '📚', text: 'Organizing Resources', duration: 1000 },
-        { icon: '✨', text: 'Preparing Interface', duration: 800 }
-    ];
+
 
     useEffect(() => {
         if (error) return;

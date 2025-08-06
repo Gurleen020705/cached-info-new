@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext({});
@@ -63,8 +63,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Handle profile operations with proper error handling
-  const handleUserProfile = async (user) => {
+  // Handle profile operations with proper error handling - memoized
+  const handleUserProfile = useCallback(async (user) => {
     if (!user) return;
 
     try {
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
       // Continue without profile - don't block user from using the app
       setUserProfile(null);
     }
-  };
+  }, []); // Empty dependency array since it only depends on the async functions
 
   useEffect(() => {
     let mounted = true;
@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [handleUserProfile]); // Now properly included in dependency array
 
   // Sign in with Google
   const signInWithGoogle = async () => {
