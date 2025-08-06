@@ -20,6 +20,10 @@ const Resources = () => {
     const [subjects, setSubjects] = useState([]);
     const [filteredResources, setFilteredResources] = useState([]);
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(12);
+
     // Modal states
     const [selectedResource, setSelectedResource] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -72,6 +76,12 @@ const Resources = () => {
         });
     };
 
+    // Calculate pagination values
+    const totalPages = Math.ceil(filteredResources.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentResources = filteredResources.slice(startIndex, endIndex);
+
     // Load data when universities change
     useEffect(() => {
         const extractAndSetOptions = () => {
@@ -116,6 +126,7 @@ const Resources = () => {
     useEffect(() => {
         const filtered = filterResources(allResources, filters);
         setFilteredResources(filtered);
+        setCurrentPage(1); // Reset to first page when filters change
     }, [filters, allResources]);
 
     const handleFilterChange = (filterType, value) => {
@@ -132,6 +143,16 @@ const Resources = () => {
             subject: ''
         });
         setFilteredResources(allResources);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        // Scroll to top of resources section
+        document.querySelector('.content-section')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
     };
 
     const handleResourceClick = (resource) => {
@@ -179,6 +200,78 @@ const Resources = () => {
         </div>
     );
 
+    const renderPagination = () => {
+        if (totalPages <= 1) return null;
+
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(i);
+        }
+
+        return (
+            <div className="pagination">
+                <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                >
+                    ‹ Previous
+                </button>
+
+                {startPage > 1 && (
+                    <>
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(1)}
+                        >
+                            1
+                        </button>
+                        {startPage > 2 && <span className="pagination-dots">...</span>}
+                    </>
+                )}
+
+                {pageNumbers.map(page => (
+                    <button
+                        key={page}
+                        className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+                        onClick={() => handlePageChange(page)}
+                    >
+                        {page}
+                    </button>
+                ))}
+
+                {endPage < totalPages && (
+                    <>
+                        {endPage < totalPages - 1 && <span className="pagination-dots">...</span>}
+                        <button
+                            className="pagination-btn"
+                            onClick={() => handlePageChange(totalPages)}
+                        >
+                            {totalPages}
+                        </button>
+                    </>
+                )}
+
+                <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                >
+                    Next ›
+                </button>
+            </div>
+        );
+    };
+
     const renderResources = () => {
         if (loading) {
             return <div className="loading">Loading resources...</div>;
@@ -192,61 +285,72 @@ const Resources = () => {
             return <p className="no-data">No resources found. Please adjust filters above.</p>;
         }
 
+        const startItem = startIndex + 1;
+        const endItem = Math.min(endIndex, filteredResources.length);
+
         return (
-            <div className="resources-grid">
-                {filteredResources.map(resource => (
-                    <div
-                        key={resource._id}
-                        className="resource-card"
-                        onClick={() => handleResourceClick(resource)}
-                    >
-                        <div className="card-header">
-                            <div className="resource-type-badge">
-                                {resource.type}
-                            </div>
-                            <div className="card-actions">
-                                {user && (
+            <>
+                <div className="resources-info">
+                    <p>Showing {startItem}-{endItem} of {filteredResources.length} resources</p>
+                </div>
+
+                <div className="resources-grid">
+                    {currentResources.map(resource => (
+                        <div
+                            key={resource._id}
+                            className="resource-card"
+                            onClick={() => handleResourceClick(resource)}
+                        >
+                            <div className="card-header">
+                                <div className="resource-type-badge">
+                                    {resource.type}
+                                </div>
+                                <div className="card-actions">
+                                    {user && (
+                                        <button
+                                            className="save-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSaveResource(resource._id);
+                                            }}
+                                            title="Save resource"
+                                        >
+                                            🤍
+                                        </button>
+                                    )}
                                     <button
-                                        className="save-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleSaveResource(resource._id);
-                                        }}
-                                        title="Save resource"
+                                        className="share-btn"
+                                        disabled
+                                        title="Share resource (coming soon)"
+                                        onClick={(e) => e.stopPropagation()}
                                     >
-                                        🤍
+                                        📤
                                     </button>
-                                )}
-                                <button
-                                    className="share-btn"
-                                    disabled
-                                    title="Share resource (coming soon)"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    📤
-                                </button>
+                                </div>
+                            </div>
+
+                            <div className="card-content">
+                                <h4 className="resource-title">{resource.title}</h4>
+                                <p className="resource-description">{resource.description}</p>
+
+                                <div className="resource-meta">
+                                    <span className="meta-item">
+                                        🏫 {resource.university.name}
+                                    </span>
+                                    <span className="meta-item">
+                                        📚 {resource.domain.name}
+                                    </span>
+                                    <span className="meta-item">
+                                        📖 {resource.subject.name}
+                                    </span>
+                                </div>
                             </div>
                         </div>
+                    ))}
+                </div>
 
-                        <div className="card-content">
-                            <h4 className="resource-title">{resource.title}</h4>
-                            <p className="resource-description">{resource.description}</p>
-
-                            <div className="resource-meta">
-                                <span className="meta-item">
-                                    🏫 {resource.university.name}
-                                </span>
-                                <span className="meta-item">
-                                    📚 {resource.domain.name}
-                                </span>
-                                <span className="meta-item">
-                                    📖 {resource.subject.name}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                {renderPagination()}
+            </>
         );
     };
 
@@ -337,3 +441,98 @@ const Resources = () => {
 };
 
 export default Resources;
+
+/* Additional CSS for pagination - add this to your Resources.css file */
+/*
+.resources-info {
+    margin-bottom: 1.5rem;
+    color: #666;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 2rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    background: white;
+    color: #333;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+
+.pagination-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination-btn:disabled {
+    background: #f8f9fa;
+    color: #ccc;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+}
+
+.pagination-dots {
+    padding: 0 0.5rem;
+    color: #666;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .pagination {
+        gap: 0.25rem;
+        padding: 0.75rem;
+        margin: 1.5rem 0;
+    }
+    
+    .pagination-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.9rem;
+        min-width: 40px;
+    }
+    
+    .resources-info {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination {
+        gap: 0.2rem;
+        padding: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .pagination-btn {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.8rem;
+        min-width: 36px;
+    }
+}
+*/
