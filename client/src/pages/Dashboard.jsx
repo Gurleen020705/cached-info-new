@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 
 import './Dashboard.css';
 
-
 const Dashboard = () => {
     const { user, isAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('resources');
@@ -140,209 +139,189 @@ const Dashboard = () => {
     // Check if user is admin
     if (!isAdmin()) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
-                    <p className="text-gray-600">You don't have permission to access the admin dashboard.</p>
+            <div className="dashboard-container">
+                <div className="access-denied">
+                    <h2>Access Denied</h2>
+                    <p>You don't have permission to access the admin dashboard.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="dashboard-container">
             {/* Header */}
-            <div className="bg-white shadow">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-6">
-                        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                        <div className="text-sm text-gray-500">
+            <div className="dashboard-header">
+                <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 0' }}>
+                        <h1 className="dashboard-title">Admin Dashboard</h1>
+                        <div className="user-info">
                             Welcome, {user?.email}
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                        <button
-                            onClick={() => setActiveTab('resources')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'resources'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
-                        >
-                            Pending Resources ({pendingResources.length})
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('users')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'users'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
-                        >
-                            Users ({users.length})
-                        </button>
-                    </nav>
+            {/* Content Container */}
+            <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
+                {/* Tabs */}
+                <div className="tab-navigation">
+                    <button
+                        onClick={() => setActiveTab('resources')}
+                        className={`tab-button ${activeTab === 'resources' ? 'active' : ''}`}
+                    >
+                        <span>Pending Resources ({pendingResources.length})</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+                    >
+                        <span>Users ({users.length})</span>
+                    </button>
                 </div>
-            </div>
 
-            {/* Notifications */}
-            {(success || error) && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                    {success && (
-                        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                            {success}
-                        </div>
-                    )}
-                    {error && (
-                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                            {error}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                {/* Notifications */}
+                {success && (
+                    <div className="notification notification-success">
+                        {success}
                     </div>
-                ) : (
-                    <>
-                        {/* Pending Resources Tab */}
-                        {activeTab === 'resources' && (
-                            <div className="space-y-6">
-                                <h2 className="text-xl font-semibold text-gray-900">
-                                    Pending Resource Submissions
-                                </h2>
+                )}
+                {error && (
+                    <div className="notification notification-error">
+                        {error}
+                    </div>
+                )}
 
-                                {pendingResources.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-500 text-lg">No pending resources to review</p>
-                                    </div>
-                                ) : (
-                                    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                                        <ul className="divide-y divide-gray-200">
+                {/* Content */}
+                <div style={{ padding: '2rem 0' }}>
+                    {loading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '16rem' }}>
+                            <div className="loading-spinner"></div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Pending Resources Tab */}
+                            {activeTab === 'resources' && (
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '1.5rem' }}>
+                                        Pending Resource Submissions
+                                    </h2>
+
+                                    {pendingResources.length === 0 ? (
+                                        <div className="empty-state">
+                                            <p style={{ fontSize: '1.125rem' }}>No pending resources to review</p>
+                                        </div>
+                                    ) : (
+                                        <div className="dashboard-card">
                                             {pendingResources.map((resource) => (
-                                                <li key={resource.id} className="px-6 py-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="text-lg font-medium text-blue-600 truncate">
+                                                <div key={resource.id} className="resource-item">
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <div style={{ flex: '1', minWidth: '0' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                                <h3 className="resource-title">
                                                                     {resource.title}
-                                                                </p>
-                                                                <div className="ml-2 flex-shrink-0 flex">
-                                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                                        Pending
-                                                                    </span>
-                                                                </div>
+                                                                </h3>
+                                                                <span className="status-badge status-pending">
+                                                                    Pending
+                                                                </span>
                                                             </div>
-                                                            <div className="mt-2">
-                                                                <p className="text-sm text-gray-600">
-                                                                    {resource.description || 'No description provided'}
-                                                                </p>
-                                                            </div>
-                                                            <div className="mt-2 flex items-center text-sm text-gray-500">
+                                                            <p className="resource-description">
+                                                                {resource.description || 'No description provided'}
+                                                            </p>
+                                                            <div className="resource-meta">
                                                                 <span>
-                                                                    Subject: {resource.subjects?.name} |
-                                                                    Domain: {resource.subjects?.domains?.name} |
+                                                                    Subject: {resource.subjects?.name}
+                                                                </span>
+                                                                <span>
+                                                                    Domain: {resource.subjects?.domains?.name}
+                                                                </span>
+                                                                <span>
                                                                     University: {resource.subjects?.domains?.universities?.name}
                                                                 </span>
                                                             </div>
-                                                            <div className="mt-2 flex items-center text-sm text-gray-500">
+                                                            <div className="resource-meta">
                                                                 <span>
-                                                                    Submitted by: {resource.user_profiles?.full_name || 'Anonymous'} |
+                                                                    Submitted by: {resource.user_profiles?.full_name || 'Anonymous'}
+                                                                </span>
+                                                                <span>
                                                                     Date: {new Date(resource.created_at).toLocaleDateString()}
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <div className="ml-4 flex space-x-2">
+                                                        <div style={{ marginLeft: '1rem', display: 'flex', gap: '0.5rem' }}>
                                                             <button
                                                                 onClick={() => approveResource(resource.id)}
-                                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                                                className="btn btn-approve"
                                                             >
                                                                 Approve
                                                             </button>
                                                             <button
                                                                 onClick={() => rejectResource(resource.id)}
-                                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                                className="btn btn-reject"
                                                             >
                                                                 Reject
                                                             </button>
                                                         </div>
                                                     </div>
-                                                </li>
+                                                </div>
                                             ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                        {/* Users Tab */}
-                        {activeTab === 'users' && (
-                            <div className="space-y-6">
-                                <h2 className="text-xl font-semibold text-gray-900">
-                                    Registered Users
-                                </h2>
+                            {/* Users Tab */}
+                            {activeTab === 'users' && (
+                                <div>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '1.5rem' }}>
+                                        Registered Users
+                                    </h2>
 
-                                {users.length === 0 ? (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-500 text-lg">No users found</p>
-                                    </div>
-                                ) : (
-                                    <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                                        <ul className="divide-y divide-gray-200">
+                                    {users.length === 0 ? (
+                                        <div className="empty-state">
+                                            <p style={{ fontSize: '1.125rem' }}>No users found</p>
+                                        </div>
+                                    ) : (
+                                        <div className="dashboard-card">
                                             {users.map((user) => (
-                                                <li key={user.id} className="px-6 py-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center">
-                                                                <p className="text-lg font-medium text-gray-900 truncate">
+                                                <div key={user.id} className="user-item">
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <div style={{ flex: '1', minWidth: '0' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                                <h3 className="user-name">
                                                                     {user.full_name || 'No name provided'}
-                                                                </p>
-                                                                <span className={`ml-3 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin'
-                                                                    ? 'bg-purple-100 text-purple-800'
-                                                                    : 'bg-gray-100 text-gray-800'
-                                                                    }`}>
+                                                                </h3>
+                                                                <span className={`status-badge ${user.role === 'admin' ? 'status-admin' : 'status-user'}`}>
                                                                     {user.role}
                                                                 </span>
                                                             </div>
-                                                            <div className="mt-1">
-                                                                <p className="text-sm text-gray-600">
-                                                                    User ID: {user.id}
-                                                                </p>
+                                                            <div className="user-meta">
+                                                                <p>User ID: {user.id}</p>
                                                             </div>
-                                                            <div className="mt-1">
-                                                                <p className="text-sm text-gray-500">
-                                                                    Joined: {new Date(user.created_at).toLocaleDateString()}
-                                                                </p>
+                                                            <div className="user-meta">
+                                                                <p>Joined: {new Date(user.created_at).toLocaleDateString()}</p>
                                                             </div>
                                                         </div>
-                                                        <div className="ml-4">
+                                                        <div style={{ marginLeft: '1rem' }}>
                                                             <select
                                                                 value={user.role}
                                                                 onChange={(e) => updateUserRole(user.id, e.target.value)}
-                                                                className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                                className="role-select"
                                                             >
                                                                 <option value="user">User</option>
                                                                 <option value="admin">Admin</option>
                                                             </select>
                                                         </div>
                                                     </div>
-                                                </li>
+                                                </div>
                                             ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </>
-                )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
