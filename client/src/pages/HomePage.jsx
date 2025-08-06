@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './HomePage.css';
 import dummyData from '../data/dummyData.json';
@@ -6,18 +6,116 @@ import dummyData from '../data/dummyData.json';
 const HomePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [autocompleteResults, setAutocompleteResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [showAutocomplete, setShowAutocomplete] = useState(false);
     const [recentResources, setRecentResources] = useState([]);
     const [stats, setStats] = useState({
         totalResources: 0,
         totalUsers: 0,
         totalRequests: 0
     });
+    const [allSearchableTerms, setAllSearchableTerms] = useState([]);
 
-    // Fetch recent resources and stats on component mount
+    const searchInputRef = useRef(null);
+    const autocompleteRef = useRef(null);
+
+    // Extract all searchable terms from dummy data
+    const extractSearchableTerms = () => {
+        const terms = new Set();
+
+        dummyData.universities.forEach(university => {
+            // Add university name
+            terms.add({
+                text: university.name,
+                type: 'university',
+                category: '🏫 University'
+            });
+
+            university.domains.forEach(domain => {
+                // Add domain name
+                terms.add({
+                    text: domain.name,
+                    type: 'domain',
+                    category: '🎯 Domain'
+                });
+
+                domain.subjects.forEach(subject => {
+                    // Add subject name
+                    terms.add({
+                        text: subject.name,
+                        type: 'subject',
+                        category: '📖 Subject'
+                    });
+
+                    // Add resource titles
+                    subject.resources.forEach(resource => {
+                        terms.add({
+                            text: resource.details.title,
+                            type: 'resource',
+                            category: '📄 Resource'
+                        });
+                    });
+                });
+            });
+        });
+
+        // Add some common search terms
+        const commonTerms = [
+            'algorithms', 'data structures', 'machine learning', 'artificial intelligence',
+            'database', 'networking', 'programming', 'software engineering',
+            'calculus', 'linear algebra', 'statistics', 'probability',
+            'physics', 'chemistry', 'biology', 'mathematics',
+            'business', 'finance', 'marketing', 'management',
+            'engineering', 'computer science', 'electrical', 'mechanical'
+        ];
+
+        commonTerms.forEach(term => {
+            terms.add({
+                text: term,
+                type: 'general',
+                category: '🔍 General'
+            });
+        });
+
+        return Array.from(terms);
+    };
+
+    // Initialize searchable terms on component mount
     useEffect(() => {
+        const terms = extractSearchableTerms();
+        setAllSearchableTerms(terms);
         loadRecentResources();
         loadStats();
+    }, []);
+
+    // Handle autocomplete as user types
+    useEffect(() => {
+        if (searchQuery.trim().length > 0) {
+            const filteredTerms = allSearchableTerms.filter(term =>
+                term.text.toLowerCase().includes(searchQuery.toLowerCase())
+            ).slice(0, 8); // Limit to 8 suggestions
+
+            setAutocompleteResults(filteredTerms);
+            setShowAutocomplete(true);
+        } else {
+            setAutocompleteResults([]);
+            setShowAutocomplete(false);
+        }
+    }, [searchQuery, allSearchableTerms]);
+
+    // Close autocomplete when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+                setShowAutocomplete(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
     // Transform dummy data into resources format
@@ -27,24 +125,26 @@ const HomePage = () => {
         dummyData.universities.forEach(university => {
             university.domains.forEach(domain => {
                 domain.subjects.forEach(subject => {
-                    resources.push({
-                        _id: `resource_${university._id}_${domain._id}_${subject._id}`,
-                        title: `${subject.name} - ${university.name}`,
-                        description: `Comprehensive learning materials for ${subject.name} in ${domain.name} at ${university.name}. This resource includes lecture notes, assignments, and study guides.`,
-                        type: 'university',
-                        university: {
-                            name: university.name,
-                            _id: university._id
-                        },
-                        domain: {
-                            name: domain.name,
-                            _id: domain._id
-                        },
-                        subject: {
-                            name: subject.name,
-                            _id: subject._id
-                        },
-                        dateAdded: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // Random date within last 30 days
+                    subject.resources.forEach(resource => {
+                        resources.push({
+                            _id: `resource_${university._id}_${domain._id}_${subject._id}_${resource._id}`,
+                            title: resource.details.title,
+                            description: resource.details.description,
+                            type: 'university',
+                            university: {
+                                name: university.name,
+                                _id: university._id
+                            },
+                            domain: {
+                                name: domain.name,
+                                _id: domain._id
+                            },
+                            subject: {
+                                name: subject.name,
+                                _id: subject._id
+                            },
+                            dateAdded: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
+                        });
                     });
                 });
             });
@@ -92,7 +192,6 @@ const HomePage = () => {
     const loadRecentResources = () => {
         try {
             const allResources = transformDummyDataToResources();
-            // Sort by date and get the 6 most recent
             const recent = allResources
                 .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
                 .slice(0, 6);
@@ -107,8 +206,8 @@ const HomePage = () => {
             const allResources = transformDummyDataToResources();
             setStats({
                 totalResources: allResources.length,
-                totalUsers: 1250, // Static dummy value
-                totalRequests: 48   // Static dummy value
+                totalUsers: 1250,
+                totalRequests: 48
             });
         } catch (error) {
             console.error('Error loading stats:', error);
@@ -125,6 +224,7 @@ const HomePage = () => {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
+        setShowAutocomplete(false);
 
         // Simulate API delay
         setTimeout(() => {
@@ -138,20 +238,64 @@ const HomePage = () => {
                     (resource.university && resource.university.name.toLowerCase().includes(searchQuery.toLowerCase()))
                 );
 
-                setSearchResults(filteredResults.slice(0, 5)); // Limit to 5 results for dropdown
+                setSearchResults(filteredResults.slice(0, 5));
             } catch (error) {
                 console.error('Search error:', error);
                 setSearchResults([]);
             } finally {
                 setIsSearching(false);
             }
-        }, 500); // 500ms delay to simulate API call
+        }, 500);
     };
 
     const handleSearchInputChange = (e) => {
         setSearchQuery(e.target.value);
-        if (e.target.value.trim() === '') {
-            setSearchResults([]);
+        setSearchResults([]); // Clear previous search results when typing
+    };
+
+    const handleAutocompleteSelect = (selectedTerm) => {
+        setSearchQuery(selectedTerm.text);
+        setShowAutocomplete(false);
+        searchInputRef.current.focus();
+
+        // Automatically trigger search with the selected term
+        setTimeout(() => {
+            const syntheticEvent = {
+                preventDefault: () => { }
+            };
+            // Set the search query first, then trigger search
+            setSearchQuery(selectedTerm.text);
+            handleSearchWithQuery(selectedTerm.text);
+        }, 100);
+    };
+
+    const handleSearchWithQuery = (query) => {
+        setIsSearching(true);
+
+        setTimeout(() => {
+            try {
+                const allResources = transformDummyDataToResources();
+                const filteredResults = allResources.filter(resource =>
+                    resource.title.toLowerCase().includes(query.toLowerCase()) ||
+                    resource.description.toLowerCase().includes(query.toLowerCase()) ||
+                    (resource.subject && resource.subject.name.toLowerCase().includes(query.toLowerCase())) ||
+                    (resource.domain && resource.domain.name.toLowerCase().includes(query.toLowerCase())) ||
+                    (resource.university && resource.university.name.toLowerCase().includes(query.toLowerCase()))
+                );
+
+                setSearchResults(filteredResults.slice(0, 5));
+            } catch (error) {
+                console.error('Search error:', error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+    };
+
+    const handleInputFocus = () => {
+        if (searchQuery.trim().length > 0) {
+            setShowAutocomplete(true);
         }
     };
 
@@ -169,16 +313,19 @@ const HomePage = () => {
                         From university materials to skill development, we've got you covered.
                     </p>
 
-                    {/* Universal Search Bar */}
-                    <div className="search-container">
+                    {/* Universal Search Bar with Autocomplete */}
+                    <div className="search-container" ref={autocompleteRef}>
                         <form onSubmit={handleSearch} className="search-form">
                             <div className="search-input-wrapper">
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
                                     placeholder="Search by topic, resource, subject, domain, or field..."
                                     value={searchQuery}
                                     onChange={handleSearchInputChange}
+                                    onFocus={handleInputFocus}
                                     className="search-input"
+                                    autoComplete="off"
                                 />
                                 <button type="submit" className="search-button" disabled={isSearching}>
                                     {isSearching ? (
@@ -192,9 +339,34 @@ const HomePage = () => {
                             </div>
                         </form>
 
+                        {/* Autocomplete Suggestions */}
+                        {showAutocomplete && autocompleteResults.length > 0 && (
+                            <div className="autocomplete-dropdown">
+                                {autocompleteResults.map((suggestion, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => handleAutocompleteSelect(suggestion)}
+                                        className="autocomplete-item"
+                                        tabIndex={0}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                handleAutocompleteSelect(suggestion);
+                                            }
+                                        }}
+                                    >
+                                        <div className="autocomplete-text">{suggestion.text}</div>
+                                        <div className="autocomplete-category">{suggestion.category}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Search Results Dropdown */}
-                        {searchResults.length > 0 && (
+                        {searchResults.length > 0 && !showAutocomplete && (
                             <div className="search-results">
+                                <div className="search-results-header">
+                                    🔍 Search Results
+                                </div>
                                 {searchResults.map((result, index) => (
                                     <Link
                                         key={index}
@@ -292,8 +464,8 @@ const HomePage = () => {
                 <div className="features-container">
                     <div className="feature-card">
                         <div className="feature-icon">🔍</div>
-                        <h3>Universal Search</h3>
-                        <p>Find resources across all categories with our powerful search engine</p>
+                        <h3>Smart Search</h3>
+                        <p>Find resources with intelligent autocomplete and instant suggestions</p>
                     </div>
                     <div className="feature-card">
                         <div className="feature-icon">📚</div>
