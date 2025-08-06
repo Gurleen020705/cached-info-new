@@ -74,10 +74,40 @@ const Resources = () => {
 
     // Load data when universities change
     useEffect(() => {
-        if (universities.length > 0) {
-            const { uniqueDomains, uniqueSubjects } = extractFilterOptions();
+        const extractAndSetOptions = () => {
+            const uniqueDomains = [];
+            const uniqueSubjects = [];
+
+            universities.forEach(university => {
+                university.domains.forEach(domain => {
+                    // Add domain if not already added
+                    if (!uniqueDomains.find(d => d._id === domain._id)) {
+                        uniqueDomains.push({
+                            _id: domain._id,
+                            name: domain.name
+                        });
+                    }
+
+                    domain.subjects.forEach(subject => {
+                        // Add subject if not already added
+                        if (!uniqueSubjects.find(s => s._id === subject._id)) {
+                            uniqueSubjects.push({
+                                _id: subject._id,
+                                name: subject.name,
+                                domainId: domain._id,
+                                universityId: university._id
+                            });
+                        }
+                    });
+                });
+            });
+
             setDomains(uniqueDomains);
             setSubjects(uniqueSubjects);
+        };
+
+        if (universities.length > 0) {
+            extractAndSetOptions();
             setFilteredResources(allResources);
         }
     }, [universities, allResources]);

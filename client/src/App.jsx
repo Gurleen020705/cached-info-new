@@ -9,7 +9,6 @@ import { DataProvider, useData } from './context/DataContext';
 import HomePage from './pages/HomePage';
 import Resources from './pages/Resources';
 import OurStory from './pages/OurStory';
-import SharedResourcePage from './pages/SharedResourcePage';
 import SubmitResource from './pages/SubmitResource';
 import RequestResource from './pages/RequestResource';
 import Dashboard from './pages/Dashboard';
@@ -57,7 +56,6 @@ const AppContent = () => {
             <SubmitResource />
           </ProtectedRoute>
         } />
-        <Route path="/resource/:shareId" element={<SharedResourcePage />} />
         <Route path="/our-story" element={<OurStory />} />
       </Routes>
     </>
