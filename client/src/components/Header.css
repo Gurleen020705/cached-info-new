@@ -10,7 +10,6 @@
     z-index: 1000;
     flex-wrap: wrap;
     border-bottom: 3px solid #1a365d;
-    position: relative;
 }
 
 .logo {
