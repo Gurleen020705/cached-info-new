@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 import './RequestResource.css';
 
 const RequestResource = () => {
+    const { universities, loading: dataLoading } = useData();
+    const { user } = useAuth();
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -19,7 +24,6 @@ const RequestResource = () => {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
-    const [universities, setUniversities] = useState([]);
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
 
@@ -38,48 +42,32 @@ const RequestResource = () => {
         { value: 'urgent', label: 'Urgent' }
     ];
 
-    // Fetch universities on component mount
+    // Load domains when university changes
     useEffect(() => {
-        const fetchUniversities = async () => {
-            try {
-                const res = await axios.get('/api/universities');
-                setUniversities(res.data);
-            } catch (err) {
-                console.error('Error fetching universities:', err);
+        if (formData.university && universities.length > 0) {
+            const selectedUniversity = universities.find(uni => uni._id === formData.university);
+            if (selectedUniversity) {
+                setDomains(selectedUniversity.domains);
             }
-        };
-        fetchUniversities();
-    }, []);
-
-    // Fetch domains when university changes
-    useEffect(() => {
-        if (formData.university) {
-            const fetchDomains = async () => {
-                try {
-                    const res = await axios.get(`/api/universities/${formData.university}/domains`);
-                    setDomains(res.data);
-                } catch (err) {
-                    console.error('Error fetching domains:', err);
-                }
-            };
-            fetchDomains();
+        } else {
+            setDomains([]);
         }
-    }, [formData.university]);
+    }, [formData.university, universities]);
 
-    // Fetch subjects when domain changes
+    // Load subjects when domain changes
     useEffect(() => {
-        if (formData.domain) {
-            const fetchSubjects = async () => {
-                try {
-                    const res = await axios.get(`/api/domains/${formData.domain}/subjects`);
-                    setSubjects(res.data);
-                } catch (err) {
-                    console.error('Error fetching subjects:', err);
+        if (formData.domain && formData.university && universities.length > 0) {
+            const selectedUniversity = universities.find(uni => uni._id === formData.university);
+            if (selectedUniversity) {
+                const selectedDomain = selectedUniversity.domains.find(domain => domain._id === formData.domain);
+                if (selectedDomain) {
+                    setSubjects(selectedDomain.subjects);
                 }
-            };
-            fetchSubjects();
+            }
+        } else {
+            setSubjects([]);
         }
-    }, [formData.domain]);
+    }, [formData.domain, formData.university, universities]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -137,6 +125,29 @@ const RequestResource = () => {
         return emailRegex.test(email);
     };
 
+    const submitToSupabase = async (requestData) => {
+        try {
+            const { data, error } = await supabase
+                .from('user_resource_requests')
+                .insert([{
+                    user_id: user?.id,
+                    subject_id: requestData.subject_id,
+                    title: requestData.title,
+                    description: requestData.description,
+                    status: 'pending'
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return { success: true, id: data.id };
+        } catch (error) {
+            console.error('Failed to save request to Supabase:', error);
+            throw error;
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -182,6 +193,11 @@ const RequestResource = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!user) {
+            setErrors({ submit: 'Please login to submit requests' });
+            return;
+        }
+
         if (!validateForm()) {
             return;
         }
@@ -193,29 +209,24 @@ const RequestResource = () => {
             const submitData = {
                 title: formData.title,
                 description: formData.description,
-                type: formData.type,
                 priority: formData.priority,
                 contactEmail: formData.contactEmail || undefined,
                 status: 'pending'
             };
 
-            if (formData.type === 'university') {
-                submitData.university = formData.university;
-                submitData.domain = formData.domain;
-                submitData.subject = formData.subject;
-            } else if (formData.type === 'skill') {
-                submitData.skill = formData.skill;
-            } else if (formData.type === 'competitive') {
-                submitData.exam = formData.exam;
+            // For university requests, we need the subject_id
+            if (formData.type === 'university' && formData.subject) {
+                submitData.subject_id = formData.subject;
+                await submitToSupabase(submitData);
+            } else {
+                // For non-university requests, log locally (since database requires subject_id)
+                console.log('Non-university request submitted:', {
+                    ...submitData,
+                    type: formData.type,
+                    skill: formData.skill,
+                    exam: formData.exam
+                });
             }
-
-            // Send to backend (you'll need to create this endpoint)
-            await axios.post('/api/requests', submitData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': localStorage.getItem('token')
-                }
-            });
 
             setSubmitSuccess(true);
             setFormData({
@@ -238,18 +249,10 @@ const RequestResource = () => {
 
         } catch (error) {
             console.error('Error submitting request:', error);
-            if (error.response?.data?.errors) {
-                const serverErrors = {};
-                error.response.data.errors.forEach(err => {
-                    serverErrors[err.param] = err.msg;
-                });
-                setErrors(serverErrors);
-            } else {
-                setErrors(prev => ({
-                    ...prev,
-                    submit: 'Failed to submit request. Please try again.'
-                }));
-            }
+            setErrors(prev => ({
+                ...prev,
+                submit: 'Failed to submit request. Please try again.'
+            }));
         } finally {
             setIsSubmitting(false);
         }
@@ -304,6 +307,14 @@ const RequestResource = () => {
         </div>
     );
 
+    if (dataLoading) {
+        return (
+            <div className="request-form-container">
+                <div className="loading">Loading universities data...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="request-form-container">
             <div className="form-wrapper">
@@ -311,6 +322,12 @@ const RequestResource = () => {
                     <h1>Request a Resource</h1>
                     <p>Can't find what you're looking for? Let us know and we'll help you find it!</p>
                 </div>
+
+                {!user && (
+                    <div className="auth-warning">
+                        <p>⚠️ Please login to submit requests</p>
+                    </div>
+                )}
 
                 {submitSuccess && (
                     <div className="success-message">
@@ -379,7 +396,7 @@ const RequestResource = () => {
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !user}
                             className="btn btn-primary"
                         >
                             {isSubmitting ? 'Submitting...' : 'Submit Request'}
@@ -401,4 +418,4 @@ const RequestResource = () => {
     );
 };
 
-export default RequestResource; 
+export default RequestResource;

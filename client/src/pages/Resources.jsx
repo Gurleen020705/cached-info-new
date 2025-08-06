@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import dummyData from '../data/dummyData.json';
+import { useData } from '../context/DataContext';
 import './Resources.css';
 
 const Resources = () => {
     const { user } = useAuth();
+    const { universities, allResources, loading, error } = useData();
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -16,29 +17,19 @@ const Resources = () => {
 
     // Data states
     const [domains, setDomains] = useState([]);
-    const [universities, setUniversities] = useState([]);
     const [subjects, setSubjects] = useState([]);
-    const [filteredSubjects, setFilteredSubjects] = useState([]);
+    const [filteredResources, setFilteredResources] = useState([]);
 
     // Modal states
     const [selectedResource, setSelectedResource] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
-    // Extract unique domains and universities from dummyData
+    // Extract unique domains and subjects from universities data
     const extractFilterOptions = () => {
         const uniqueDomains = [];
-        const uniqueUniversities = [];
-        const allSubjects = [];
+        const uniqueSubjects = [];
 
-        dummyData.universities.forEach(university => {
-            // Add university if not already added
-            if (!uniqueUniversities.find(u => u._id === university._id)) {
-                uniqueUniversities.push({
-                    _id: university._id,
-                    name: university.name
-                });
-            }
-
+        universities.forEach(university => {
             university.domains.forEach(domain => {
                 // Add domain if not already added
                 if (!uniqueDomains.find(d => d._id === domain._id)) {
@@ -48,61 +39,54 @@ const Resources = () => {
                     });
                 }
 
-                // Add subjects with university and domain info
                 domain.subjects.forEach(subject => {
-                    // Add each resource as a separate item with subject context
-                    subject.resources.forEach(resource => {
-                        allSubjects.push({
-                            ...resource,
-                            subjectId: subject._id,
-                            subjectName: subject.name,
-                            universityId: university._id,
-                            universityName: university.name,
+                    // Add subject if not already added
+                    if (!uniqueSubjects.find(s => s._id === subject._id)) {
+                        uniqueSubjects.push({
+                            _id: subject._id,
+                            name: subject.name,
                             domainId: domain._id,
-                            domainName: domain.name,
-                            title: resource.details.title,
-                            description: resource.details.description,
-                            type: 'university',
-                            university: { name: university.name },
-                            domain: { name: domain.name },
-                            subject: { name: subject.name }
+                            universityId: university._id
                         });
-                    });
+                    }
                 });
             });
         });
 
-        return { uniqueDomains, uniqueUniversities, allSubjects };
+        return { uniqueDomains, uniqueSubjects };
     };
 
-    // Filter subjects based on current filters
-    const filterSubjects = (allSubjects, currentFilters) => {
-        return allSubjects.filter(subject => {
-            if (currentFilters.university && subject.universityId !== currentFilters.university) {
+    // Filter resources based on current filters
+    const filterResources = (resources, currentFilters) => {
+        return resources.filter(resource => {
+            if (currentFilters.university && resource.university._id !== currentFilters.university) {
                 return false;
             }
-            if (currentFilters.domain && subject.domainId !== currentFilters.domain) {
+            if (currentFilters.domain && resource.domain._id !== currentFilters.domain) {
+                return false;
+            }
+            if (currentFilters.subject && resource.subject._id !== currentFilters.subject) {
                 return false;
             }
             return true;
         });
     };
 
-    // Load data on component mount
+    // Load data when universities change
     useEffect(() => {
-        const { uniqueDomains, uniqueUniversities, allSubjects } = extractFilterOptions();
-
-        setDomains(uniqueDomains);
-        setUniversities(uniqueUniversities);
-        setSubjects(allSubjects);
-        setFilteredSubjects(allSubjects);
-    }, []);
+        if (universities.length > 0) {
+            const { uniqueDomains, uniqueSubjects } = extractFilterOptions();
+            setDomains(uniqueDomains);
+            setSubjects(uniqueSubjects);
+            setFilteredResources(allResources);
+        }
+    }, [universities, allResources]);
 
     // Update filtered data when filters change
     useEffect(() => {
-        const filtered = filterSubjects(subjects, filters);
-        setFilteredSubjects(filtered);
-    }, [filters, subjects]);
+        const filtered = filterResources(allResources, filters);
+        setFilteredResources(filtered);
+    }, [filters, allResources]);
 
     const handleFilterChange = (filterType, value) => {
         setFilters(prev => ({
@@ -117,7 +101,7 @@ const Resources = () => {
             university: '',
             subject: ''
         });
-        setFilteredSubjects(subjects);
+        setFilteredResources(allResources);
     };
 
     const handleResourceClick = (resource) => {
@@ -135,7 +119,17 @@ const Resources = () => {
             alert('Please login to save resources');
             return;
         }
-        alert('Resource saved successfully!');
+
+        // Get existing saved resources from localStorage
+        const savedResources = JSON.parse(localStorage.getItem('savedResources') || '[]');
+
+        if (!savedResources.includes(resourceId)) {
+            savedResources.push(resourceId);
+            localStorage.setItem('savedResources', JSON.stringify(savedResources));
+            alert('Resource saved successfully!');
+        } else {
+            alert('Resource already saved!');
+        }
     };
 
     const renderDropdown = (label, options, filterKey, valueField = '_id', labelField = 'name') => (
@@ -156,15 +150,23 @@ const Resources = () => {
     );
 
     const renderResources = () => {
-        if (filteredSubjects.length === 0) {
-            return <p className="no-data">No resources found. Please select filters above.</p>;
+        if (loading) {
+            return <div className="loading">Loading resources...</div>;
+        }
+
+        if (error) {
+            return <div className="error">Error loading resources: {error}</div>;
+        }
+
+        if (filteredResources.length === 0) {
+            return <p className="no-data">No resources found. Please adjust filters above.</p>;
         }
 
         return (
             <div className="resources-grid">
-                {filteredSubjects.map(resource => (
+                {filteredResources.map(resource => (
                     <div
-                        key={`${resource.universityId}-${resource.domainId}-${resource.subjectId}-${resource._id}`}
+                        key={resource._id}
                         className="resource-card"
                         onClick={() => handleResourceClick(resource)}
                     >
@@ -202,13 +204,13 @@ const Resources = () => {
 
                             <div className="resource-meta">
                                 <span className="meta-item">
-                                    🏫 {resource.universityName}
+                                    🏫 {resource.university.name}
                                 </span>
                                 <span className="meta-item">
-                                    📚 {resource.domainName}
+                                    📚 {resource.domain.name}
                                 </span>
                                 <span className="meta-item">
-                                    📖 {resource.subjectName}
+                                    📖 {resource.subject.name}
                                 </span>
                             </div>
                         </div>
@@ -255,13 +257,13 @@ const Resources = () => {
                         <div className="modal-body">
                             <div className="resource-details">
                                 <div className="detail-item">
-                                    <strong>University:</strong> {selectedResource.universityName}
+                                    <strong>University:</strong> {selectedResource.university.name}
                                 </div>
                                 <div className="detail-item">
-                                    <strong>Domain:</strong> {selectedResource.domainName}
+                                    <strong>Domain:</strong> {selectedResource.domain.name}
                                 </div>
                                 <div className="detail-item">
-                                    <strong>Subject:</strong> {selectedResource.subjectName}
+                                    <strong>Subject:</strong> {selectedResource.subject.name}
                                 </div>
                                 <div className="detail-item">
                                     <strong>Type:</strong> {selectedResource.type}
@@ -282,9 +284,20 @@ const Resources = () => {
                             >
                                 {user ? 'Save Resource' : 'Login to Save'}
                             </button>
-                            <button className="share-resource-btn" disabled>
-                                Share (Coming Soon)
-                            </button>
+                            <a
+                                href={selectedResource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="save-resource-btn"
+                                style={{
+                                    background: '#007bff',
+                                    textDecoration: 'none',
+                                    display: 'inline-block',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                Visit Resource
+                            </a>
                         </div>
                     </div>
                 </div>

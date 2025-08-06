@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import ShareableResourceCard from '../components/ShareableResourceCard';
 import './HomePage.css';
-import dummyData from '../data/dummyData.json';
 
 const HomePage = () => {
     const { user } = useAuth();
+    const {
+        searchResources,
+        getRecentResources,
+        getStats,
+        extractSearchableTerms
+    } = useData();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [autocompleteResults, setAutocompleteResults] = useState([]);
@@ -28,82 +35,35 @@ const HomePage = () => {
     const searchInputRef = useRef(null);
     const autocompleteRef = useRef(null);
 
-    // Extract all searchable terms from dummy data
-    const extractSearchableTerms = () => {
-        const terms = new Set();
-
-        dummyData.universities.forEach(university => {
-            // Add university name
-            terms.add({
-                text: university.name,
-                type: 'university',
-                category: '🏫 University'
-            });
-
-            university.domains.forEach(domain => {
-                // Add domain name
-                terms.add({
-                    text: domain.name,
-                    type: 'domain',
-                    category: '🎯 Domain'
-                });
-
-                domain.subjects.forEach(subject => {
-                    // Add subject name
-                    terms.add({
-                        text: subject.name,
-                        type: 'subject',
-                        category: '📖 Subject'
-                    });
-
-                    // Add resource titles
-                    subject.resources.forEach(resource => {
-                        terms.add({
-                            text: resource.details.title,
-                            type: 'resource',
-                            category: '📄 Resource'
-                        });
-                    });
-                });
-            });
-        });
-
-        // Add some common search terms
-        const commonTerms = [
-            'algorithms', 'data structures', 'machine learning', 'artificial intelligence',
-            'database', 'networking', 'programming', 'software engineering',
-            'calculus', 'linear algebra', 'statistics', 'probability',
-            'physics', 'chemistry', 'biology', 'mathematics',
-            'business', 'finance', 'marketing', 'management',
-            'engineering', 'computer science', 'electrical', 'mechanical'
-        ];
-
-        commonTerms.forEach(term => {
-            terms.add({
-                text: term,
-                type: 'general',
-                category: '🔍 General'
-            });
-        });
-
-        return Array.from(terms);
-    };
-
-    // Initialize searchable terms on component mount
+    // Initialize data from Supabase
     useEffect(() => {
-        const terms = extractSearchableTerms();
-        setAllSearchableTerms(terms);
-        loadRecentResources();
-        loadStats();
-        loadSavedResources();
-    }, []);
+        const initializeData = async () => {
+            // Load recent resources
+            const recent = getRecentResources(6);
+            setRecentResources(recent);
+
+            // Load searchable terms
+            const terms = extractSearchableTerms();
+            setAllSearchableTerms(terms);
+
+            // Load stats
+            const statsData = await getStats();
+            setStats(statsData);
+
+            // Load saved resources from localStorage
+            const saved = JSON.parse(localStorage.getItem('savedResources') || '[]');
+            setSavedResources(saved);
+        };
+
+        initializeData();
+    }, [getRecentResources, extractSearchableTerms, getStats]);
 
     // Handle autocomplete as user types
     useEffect(() => {
         if (searchQuery.trim().length > 0) {
             const filteredTerms = allSearchableTerms.filter(term =>
                 term.text.toLowerCase().includes(searchQuery.toLowerCase())
-            ).slice(0, 8); // Limit to 8 suggestions
+            ).slice(0, 8);
 
             setAutocompleteResults(filteredTerms);
             setShowAutocomplete(true);
@@ -126,125 +86,6 @@ const HomePage = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
-
-    // Transform dummy data into resources format
-    const transformDummyDataToResources = () => {
-        const resources = [];
-
-        dummyData.universities.forEach(university => {
-            university.domains.forEach(domain => {
-                domain.subjects.forEach(subject => {
-                    subject.resources.forEach(resource => {
-                        resources.push({
-                            _id: `resource_${university._id}_${domain._id}_${subject._id}_${resource._id}`,
-                            title: resource.details.title,
-                            description: resource.details.description,
-                            url: resource.details.url || '#',
-                            type: 'university',
-                            university: {
-                                name: university.name,
-                                _id: university._id
-                            },
-                            domain: {
-                                name: domain.name,
-                                _id: domain._id
-                            },
-                            subject: {
-                                name: subject.name,
-                                _id: subject._id
-                            },
-                            submittedBy: {
-                                name: 'Anonymous'
-                            },
-                            dateAdded: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                        });
-                    });
-                });
-            });
-        });
-
-        // Add some skill-based and competitive exam resources
-        const additionalResources = [
-            {
-                _id: 'skill_001',
-                title: 'Full Stack Web Development Bootcamp',
-                description: 'Complete guide to modern web development including React, Node.js, MongoDB, and deployment strategies.',
-                url: 'https://example.com/fullstack-bootcamp',
-                type: 'skill',
-                skill: 'Web Development',
-                submittedBy: { name: 'TechEducator' },
-                dateAdded: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                _id: 'skill_002',
-                title: 'Data Science with Python',
-                description: 'Learn data analysis, visualization, and machine learning using Python, pandas, and scikit-learn.',
-                url: 'https://example.com/data-science-python',
-                type: 'skill',
-                skill: 'Data Science',
-                submittedBy: { name: 'DataExpert' },
-                dateAdded: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                _id: 'competitive_001',
-                title: 'GATE Computer Science Preparation',
-                description: 'Comprehensive preparation materials for GATE CS including previous years papers, mock tests, and solutions.',
-                url: 'https://example.com/gate-cs-prep',
-                type: 'competitive',
-                exam: 'GATE CS',
-                submittedBy: { name: 'ExamPrep' },
-                dateAdded: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-                _id: 'competitive_002',
-                title: 'JEE Advanced Physics',
-                description: 'Advanced physics problems and solutions for JEE preparation with detailed explanations.',
-                url: 'https://example.com/jee-physics',
-                type: 'competitive',
-                exam: 'JEE Advanced',
-                submittedBy: { name: 'PhysicsGuru' },
-                dateAdded: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
-            }
-        ];
-
-        return [...resources, ...additionalResources];
-    };
-
-    const loadRecentResources = () => {
-        try {
-            const allResources = transformDummyDataToResources();
-            const recent = allResources
-                .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
-                .slice(0, 6);
-            setRecentResources(recent);
-        } catch (error) {
-            console.error('Error loading recent resources:', error);
-        }
-    };
-
-    const loadSavedResources = () => {
-        // Load saved resources from localStorage or API
-        const saved = JSON.parse(localStorage.getItem('savedResources') || '[]');
-        setSavedResources(saved);
-    };
-
-    const loadStats = () => {
-        try {
-            const allResources = transformDummyDataToResources();
-            setStats({
-                totalResources: allResources.length,
-                totalUsers: 1250,
-                totalRequests: 48
-            });
-        } catch (error) {
-            console.error('Error loading stats:', error);
-            setStats({
-                totalResources: 150,
-                totalUsers: 1200,
-                totalRequests: 45
-            });
-        }
-    };
 
     const handleSaveResource = (resource) => {
         const newSavedResources = [...savedResources, resource._id];
@@ -276,33 +117,16 @@ const HomePage = () => {
         setIsSearching(true);
         setShowAutocomplete(false);
 
-        // Simulate API delay
         setTimeout(() => {
-            try {
-                const allResources = transformDummyDataToResources();
-                const filteredResults = allResources.filter(resource =>
-                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (resource.subject && resource.subject.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (resource.domain && resource.domain.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (resource.university && resource.university.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (resource.skill && resource.skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (resource.exam && resource.exam.toLowerCase().includes(searchQuery.toLowerCase()))
-                );
-
-                setSearchResults(filteredResults.slice(0, 5));
-            } catch (error) {
-                console.error('Search error:', error);
-                setSearchResults([]);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 500);
+            const results = searchResources(searchQuery, 5);
+            setSearchResults(results);
+            setIsSearching(false);
+        }, 300);
     };
 
     const handleSearchInputChange = (e) => {
         setSearchQuery(e.target.value);
-        setSearchResults([]); // Clear previous search results when typing
+        setSearchResults([]);
     };
 
     const handleAutocompleteSelect = (selectedTerm) => {
@@ -310,7 +134,6 @@ const HomePage = () => {
         setShowAutocomplete(false);
         searchInputRef.current.focus();
 
-        // Automatically trigger search with the selected term
         setTimeout(() => {
             handleSearchWithQuery(selectedTerm.text);
         }, 100);
@@ -320,25 +143,9 @@ const HomePage = () => {
         setIsSearching(true);
 
         setTimeout(() => {
-            try {
-                const allResources = transformDummyDataToResources();
-                const filteredResults = allResources.filter(resource =>
-                    resource.title.toLowerCase().includes(query.toLowerCase()) ||
-                    resource.description.toLowerCase().includes(query.toLowerCase()) ||
-                    (resource.subject && resource.subject.name.toLowerCase().includes(query.toLowerCase())) ||
-                    (resource.domain && resource.domain.name.toLowerCase().includes(query.toLowerCase())) ||
-                    (resource.university && resource.university.name.toLowerCase().includes(query.toLowerCase())) ||
-                    (resource.skill && resource.skill.toLowerCase().includes(query.toLowerCase())) ||
-                    (resource.exam && resource.exam.toLowerCase().includes(query.toLowerCase()))
-                );
-
-                setSearchResults(filteredResults.slice(0, 5));
-            } catch (error) {
-                console.error('Search error:', error);
-                setSearchResults([]);
-            } finally {
-                setIsSearching(false);
-            }
+            const results = searchResources(query, 5);
+            setSearchResults(results);
+            setIsSearching(false);
         }, 300);
     };
 
@@ -417,11 +224,13 @@ const HomePage = () => {
                                     🔍 Search Results
                                 </div>
                                 {searchResults.map((result, index) => (
-                                    <Link
+                                    <div
                                         key={index}
-                                        to={`/resources/${result._id}`}
                                         className="search-result-item"
-                                        onClick={() => setSearchResults([])}
+                                        onClick={() => {
+                                            setSearchResults([]);
+                                            handleResourceClick(result);
+                                        }}
                                     >
                                         <div className="result-icon">
                                             {result.type === 'university' && '🎓'}
@@ -432,7 +241,7 @@ const HomePage = () => {
                                             <h4>{result.title}</h4>
                                             <p>{result.description.substring(0, 80)}...</p>
                                         </div>
-                                    </Link>
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -470,7 +279,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Recent Resources Section - Now using ShareableResourceCard */}
+            {/* Recent Resources Section */}
             <section className="recent-resources">
                 <div className="section-header">
                     <h2>Recently Added Resources</h2>
@@ -524,7 +333,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Modal - Similar to Resources.jsx */}
+            {/* Modal */}
             {showModal && selectedResource && (
                 <div className="modal-overlay" onClick={closeModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>

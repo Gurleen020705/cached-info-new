@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 import './SubmitResource.css';
-import dummyData from '../data/dummyData.json';
 
 const SubmitResource = () => {
+    const { universities, loading: dataLoading } = useData();
+    const { user } = useAuth();
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        type: '',
         url: '',
         university: '',
         domain: '',
@@ -21,7 +25,6 @@ const SubmitResource = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitProgress, setSubmitProgress] = useState(0);
     const [submitStatus, setSubmitStatus] = useState(''); // 'uploading', 'processing', 'success', 'error'
-    const [universities, setUniversities] = useState([]);
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [skillCategories, setSkillCategories] = useState([]);
@@ -29,14 +32,7 @@ const SubmitResource = () => {
     const [examCategories, setExamCategories] = useState([]);
     const [exams, setExams] = useState([]);
 
-    // Dropdown options
-    const resourceTypes = [
-        { value: 'university', label: 'University' },
-        { value: 'skill', label: 'Skill' },
-        { value: 'competitive', label: 'Competitive Exam' }
-    ];
-
-    // Generate skill categories and skills from existing university data
+    // Generate skill categories and skills (keeping existing logic since not in database)
     const generateSkillData = () => {
         const skillCategories = [
             { _id: 'skill_cat_001', name: 'Programming Languages' },
@@ -75,7 +71,7 @@ const SubmitResource = () => {
         return { skillCategories, skills };
     };
 
-    // Generate exam categories and exams
+    // Generate exam categories and exams (keeping existing logic since not in database)
     const generateExamData = () => {
         const examCategories = [
             { _id: 'exam_cat_001', name: 'Engineering' },
@@ -115,8 +111,6 @@ const SubmitResource = () => {
 
     // Load initial data on component mount
     useEffect(() => {
-        setUniversities(dummyData.universities);
-
         const { skillCategories } = generateSkillData();
         const { examCategories } = generateExamData();
 
@@ -126,20 +120,20 @@ const SubmitResource = () => {
 
     // Load domains when university changes
     useEffect(() => {
-        if (formData.university) {
-            const selectedUniversity = dummyData.universities.find(uni => uni._id === formData.university);
+        if (formData.university && universities.length > 0) {
+            const selectedUniversity = universities.find(uni => uni._id === formData.university);
             if (selectedUniversity) {
                 setDomains(selectedUniversity.domains);
             }
         } else {
             setDomains([]);
         }
-    }, [formData.university]);
+    }, [formData.university, universities]);
 
     // Load subjects when domain changes
     useEffect(() => {
-        if (formData.domain) {
-            const selectedUniversity = dummyData.universities.find(uni => uni._id === formData.university);
+        if (formData.domain && formData.university && universities.length > 0) {
+            const selectedUniversity = universities.find(uni => uni._id === formData.university);
             if (selectedUniversity) {
                 const selectedDomain = selectedUniversity.domains.find(domain => domain._id === formData.domain);
                 if (selectedDomain) {
@@ -149,7 +143,7 @@ const SubmitResource = () => {
         } else {
             setSubjects([]);
         }
-    }, [formData.domain, formData.university]);
+    }, [formData.domain, formData.university, universities]);
 
     // Load skills when skill category changes
     useEffect(() => {
@@ -184,41 +178,33 @@ const SubmitResource = () => {
             newErrors.description = 'Description must be at least 10 characters long';
         }
 
-        if (!formData.type) {
-            newErrors.type = 'Please select a resource type';
-        }
-
         if (!formData.url.trim()) {
             newErrors.url = 'URL is required';
         } else if (!isValidUrl(formData.url)) {
             newErrors.url = 'Please enter a valid URL';
         }
 
-        // Validate based on resource type
-        if (formData.type === 'university') {
-            if (!formData.university) {
-                newErrors.university = 'Please select a university';
-            }
-            if (!formData.domain) {
-                newErrors.domain = 'Please select a domain';
-            }
-            if (!formData.subject) {
-                newErrors.subject = 'Please select a subject';
-            }
-        } else if (formData.type === 'skill') {
-            if (!formData.skillCategory) {
-                newErrors.skillCategory = 'Please select a skill category';
-            }
-            if (!formData.skill) {
-                newErrors.skill = 'Please select a skill';
-            }
-        } else if (formData.type === 'competitive') {
-            if (!formData.examCategory) {
-                newErrors.examCategory = 'Please select an exam category';
-            }
-            if (!formData.exam) {
-                newErrors.exam = 'Please select an exam';
-            }
+        // Validate university resource requirements
+        if (formData.university && !formData.domain) {
+            newErrors.domain = 'Please select a domain';
+        }
+        if (formData.domain && !formData.subject) {
+            newErrors.subject = 'Please select a subject';
+        }
+
+        // Validate skill requirements
+        if (formData.skillCategory && !formData.skill) {
+            newErrors.skill = 'Please select a skill';
+        }
+
+        // Validate exam requirements
+        if (formData.examCategory && !formData.exam) {
+            newErrors.exam = 'Please select an exam';
+        }
+
+        // At least one category must be selected
+        if (!formData.university && !formData.skillCategory && !formData.examCategory) {
+            newErrors.category = 'Please select either a university subject, skill, or exam category';
         }
 
         setErrors(newErrors);
@@ -234,32 +220,27 @@ const SubmitResource = () => {
         }
     };
 
-    // Function to save to pendingResources.json locally
-    const saveToPendingResources = async (resourceData) => {
+    // Function to submit resource to Supabase
+    const submitToSupabase = async (resourceData) => {
         try {
-            // Get existing pending resources from localStorage
-            const existingResources = JSON.parse(localStorage.getItem('pendingResources') || '[]');
-            existingResources.push(resourceData);
+            const { data, error } = await supabase
+                .from('resources')
+                .insert([{
+                    subject_id: resourceData.subject_id,
+                    title: resourceData.title,
+                    description: resourceData.description,
+                    url: resourceData.url,
+                    submitted_by: user?.id,
+                    is_approved: false
+                }])
+                .select()
+                .single();
 
-            // Save to localStorage
-            localStorage.setItem('pendingResources', JSON.stringify(existingResources));
+            if (error) throw error;
 
-            // Create and download pendingResources.json file
-            const jsonData = JSON.stringify(existingResources, null, 2);
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'pendingResources.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            return { success: true, id: resourceData._id };
+            return { success: true, id: data.id };
         } catch (error) {
-            console.error('Failed to save resource:', error);
+            console.error('Failed to save resource to Supabase:', error);
             throw error;
         }
     };
@@ -274,7 +255,7 @@ const SubmitResource = () => {
                     callback();
                     return 100;
                 }
-                return prev + Math.random() * 15 + 5; // Random increment between 5-20
+                return prev + Math.random() * 15 + 5;
             });
         }, 200);
     };
@@ -294,23 +275,8 @@ const SubmitResource = () => {
             }));
         }
 
-        // Reset dependent fields when type changes
-        if (name === 'type') {
-            setFormData(prev => ({
-                ...prev,
-                university: '',
-                domain: '',
-                subject: '',
-                skillCategory: '',
-                skill: '',
-                examCategory: '',
-                exam: ''
-            }));
-            setDomains([]);
-            setSubjects([]);
-            setSkills([]);
-            setExams([]);
-        } else if (name === 'university') {
+        // Reset dependent fields
+        if (name === 'university') {
             setFormData(prev => ({
                 ...prev,
                 domain: '',
@@ -338,6 +304,11 @@ const SubmitResource = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!user) {
+            setErrors({ submit: 'Please login to submit resources' });
+            return;
+        }
+
         if (!validateForm()) {
             return;
         }
@@ -347,28 +318,17 @@ const SubmitResource = () => {
         setSubmitProgress(0);
 
         try {
-            // Prepare data based on resource type
+            // Prepare data for submission
             const resourceData = {
-                _id: `pending_${Date.now()}`,
                 title: formData.title,
                 description: formData.description,
-                type: formData.type,
                 url: formData.url,
-                status: 'pending',
-                submittedAt: new Date().toISOString(),
-                submittedBy: 'user', // You can replace this with actual user info
+                subject_id: formData.subject // This is the subject UUID from the database
             };
 
-            if (formData.type === 'university') {
-                resourceData.university = formData.university;
-                resourceData.domain = formData.domain;
-                resourceData.subject = formData.subject;
-            } else if (formData.type === 'skill') {
-                resourceData.skill = formData.skill;
-                resourceData.skillCategory = formData.skillCategory;
-            } else if (formData.type === 'competitive') {
-                resourceData.exam = formData.exam;
-                resourceData.examCategory = formData.examCategory;
+            // Only submit if we have a subject selected (university resources)
+            if (!formData.subject) {
+                throw new Error('University subject is required for submission');
             }
 
             // Simulate upload progress
@@ -376,8 +336,8 @@ const SubmitResource = () => {
                 setSubmitStatus('processing');
 
                 try {
-                    // Save to pendingResources.json
-                    await saveToPendingResources(resourceData);
+                    // Submit to Supabase
+                    await submitToSupabase(resourceData);
 
                     // Final processing delay
                     setTimeout(() => {
@@ -387,7 +347,6 @@ const SubmitResource = () => {
                         setFormData({
                             title: '',
                             description: '',
-                            type: '',
                             url: '',
                             university: '',
                             domain: '',
@@ -518,7 +477,7 @@ const SubmitResource = () => {
                                 <div className="processing-animation"></div>
                             </div>
                             <h3>Processing Resource</h3>
-                            <p>Saving to pending resources...</p>
+                            <p>Saving to database...</p>
                         </div>
                     )}
 
@@ -528,7 +487,7 @@ const SubmitResource = () => {
                                 <div className="checkmark">✓</div>
                             </div>
                             <h3>Success!</h3>
-                            <p>Resource submitted successfully and saved to pending review.</p>
+                            <p>Resource submitted successfully and is pending approval.</p>
                         </div>
                     )}
 
@@ -546,6 +505,14 @@ const SubmitResource = () => {
         );
     };
 
+    if (dataLoading) {
+        return (
+            <div className="resource-form-container">
+                <div className="loading">Loading universities data...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="resource-form-container">
             <div className="form-wrapper">
@@ -554,32 +521,45 @@ const SubmitResource = () => {
                     <p>Share valuable learning resources with the community</p>
                 </div>
 
+                {!user && (
+                    <div className="auth-warning">
+                        <p>⚠️ Please login to submit resources</p>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="resource-form">
                     {renderField('title', 'Resource Title', 'text')}
                     {renderField('description', 'Description', 'textarea')}
-                    {renderField('type', 'Type', 'select', resourceTypes)}
                     {renderField('url', 'Resource URL', 'url')}
 
-                    {formData.type === 'university' && (
-                        <>
-                            {renderField('university', 'University', 'select', universities)}
-                            {formData.university && renderField('domain', 'Domain', 'select', domains)}
-                            {formData.domain && renderField('subject', 'Subject', 'select', subjects)}
-                        </>
-                    )}
+                    <div className="form-section">
+                        <h3>Categorize Your Resource</h3>
+                        <p>Select the appropriate category for your resource:</p>
 
-                    {formData.type === 'skill' && (
-                        <>
-                            {renderField('skillCategory', 'Skill Category', 'select', skillCategories)}
-                            {formData.skillCategory && renderField('skill', 'Skill', 'select', skills)}
-                        </>
-                    )}
+                        <div className="category-section">
+                            <h4>📚 University Subject</h4>
+                            {renderField('university', 'University', 'select', universities, false)}
+                            {formData.university && renderField('domain', 'Domain', 'select', domains, false)}
+                            {formData.domain && renderField('subject', 'Subject', 'select', subjects, false)}
+                        </div>
 
-                    {formData.type === 'competitive' && (
-                        <>
-                            {renderField('examCategory', 'Exam Category', 'select', examCategories)}
-                            {formData.examCategory && renderField('exam', 'Exam', 'select', exams)}
-                        </>
+                        <div className="category-section">
+                            <h4>💡 Skill Development</h4>
+                            {renderField('skillCategory', 'Skill Category', 'select', skillCategories, false)}
+                            {formData.skillCategory && renderField('skill', 'Skill', 'select', skills, false)}
+                        </div>
+
+                        <div className="category-section">
+                            <h4>📝 Competitive Exam</h4>
+                            {renderField('examCategory', 'Exam Category', 'select', examCategories, false)}
+                            {formData.examCategory && renderField('exam', 'Exam', 'select', exams, false)}
+                        </div>
+                    </div>
+
+                    {errors.category && (
+                        <div className="error-alert">
+                            <p>{errors.category}</p>
+                        </div>
                     )}
 
                     {errors.submit && (
@@ -595,7 +575,6 @@ const SubmitResource = () => {
                                 setFormData({
                                     title: '',
                                     description: '',
-                                    type: '',
                                     url: '',
                                     university: '',
                                     domain: '',
@@ -614,7 +593,7 @@ const SubmitResource = () => {
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !user}
                             className="btn btn-primary"
                         >
                             {isSubmitting ? 'Submitting...' : 'Submit Resource'}

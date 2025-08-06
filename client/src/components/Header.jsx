@@ -8,7 +8,7 @@ const Header = () => {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const location = useLocation();
-    const { user, signOut, loading } = useAuth();
+    const { user, userProfile, signOut, loading, isAdmin } = useAuth();
 
     // Close menu on route change
     useEffect(() => {
@@ -80,14 +80,20 @@ const Header = () => {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
+            setShowUserMenu(false);
+            setIsMenuOpen(false);
+
             await signOut();
+
+            // Navigate to home page after successful logout
+            // Use React Router's navigate instead of window.location
+            window.location.href = '/';
+
         } catch (error) {
             console.error('Logout failed:', error);
             alert('Logout failed. Please try again.');
         } finally {
             setIsLoggingOut(false);
-            setShowUserMenu(false);
-            setIsMenuOpen(false);
         }
     };
 
@@ -105,6 +111,15 @@ const Header = () => {
                 .substring(0, 2);
         }
 
+        if (userProfile?.full_name) {
+            return userProfile.full_name
+                .split(' ')
+                .map(name => name.charAt(0))
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+
         if (user.email) {
             return user.email.charAt(0).toUpperCase();
         }
@@ -114,7 +129,7 @@ const Header = () => {
 
     const getUserDisplayName = () => {
         if (!user) return '';
-        return user.user_metadata?.full_name || user.email || 'User';
+        return userProfile?.full_name || user.user_metadata?.full_name || user.email || 'User';
     };
 
     return (
@@ -204,21 +219,30 @@ const Header = () => {
                                         <div className="user-info">
                                             <div className="user-name">{getUserDisplayName()}</div>
                                             <div className="user-email">{user.email}</div>
+                                            {userProfile?.role && (
+                                                <div className="user-role">Role: {userProfile.role}</div>
+                                            )}
                                         </div>
                                         <hr className="dropdown-divider" />
-                                        <Link
-                                            to="/dashboard"
-                                            className="dropdown-link"
-                                            onClick={() => {
-                                                setShowUserMenu(false);
-                                                closeMenu();
-                                            }}
-                                        >
-                                            <span className="dropdown-icon">📊</span>
-                                            Dashboard
-                                        </Link>
 
-                                        <hr className="dropdown-divider" />
+                                        {/* Only show Dashboard for admin users */}
+                                        {isAdmin() && (
+                                            <>
+                                                <Link
+                                                    to="/dashboard"
+                                                    className="dropdown-link"
+                                                    onClick={() => {
+                                                        setShowUserMenu(false);
+                                                        closeMenu();
+                                                    }}
+                                                >
+                                                    <span className="dropdown-icon">📊</span>
+                                                    Dashboard
+                                                </Link>
+                                                <hr className="dropdown-divider" />
+                                            </>
+                                        )}
+
                                         <button
                                             onClick={handleLogout}
                                             disabled={isLoggingOut}

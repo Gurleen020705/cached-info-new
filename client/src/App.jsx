@@ -12,16 +12,25 @@ import Dashboard from './pages/Dashboard';
 
 // Components
 import Header from './components/Header';
-import Profile from './components/Profile';
 import SignIn from './components/SignIn';
 import ProtectedRoute from './components/ProtectedRoute';
+import LoadingScreen from './components/LoadingScreen';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
+import { DataProvider, useData } from './context/DataContext';
 
-function App() {
+// App content component (separated to use data context)
+const AppContent = () => {
+  const { loading, error } = useData();
+
+  // Show loading screen while data is being fetched
+  if (loading) {
+    return <LoadingScreen error={error} />;
+  }
+
   return (
-    <AuthProvider>
+    <>
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -32,11 +41,6 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
@@ -50,6 +54,16 @@ function App() {
         <Route path="/resource/:shareId" element={<SharedResourcePage />} />
         <Route path="/our-story" element={<OurStory />} />
       </Routes>
+    </>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <DataProvider>
+        <AppContent />
+      </DataProvider>
     </AuthProvider>
   );
 }
