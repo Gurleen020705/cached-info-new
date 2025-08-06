@@ -7,6 +7,7 @@ import Resources from './pages/Resources';
 import OurStory from './pages/OurStory';
 import SharedResourcePage from './pages/SharedResourcePage';
 import SubmitResource from './pages/SubmitResource';
+import RequestResource from './pages/RequestResource';
 import Dashboard from './pages/Dashboard';
 
 // Components
@@ -25,6 +26,11 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/resources" element={<Resources />} />
+        <Route path="/request" element={
+          <ProtectedRoute>
+            <RequestResource />
+          </ProtectedRoute>
+        } />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/profile" element={
           <ProtectedRoute>

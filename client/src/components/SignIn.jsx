@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext'
 import './SignIn.css';
 
-const SignIn = ({ onGoogleSignIn, loading = false, user = null }) => {
+const SignIn = () => {
+    const { signInWithGoogle, signInWithEmail, signUpWithEmail, loading, user } = useAuth();
+
     const [isSigningIn, setIsSigningIn] = useState(false);
     const [error, setError] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignUp, setIsSignUp] = useState(false);
+    const [emailSignInLoading, setEmailSignInLoading] = useState(false);
 
     if (loading) {
         return (
@@ -22,12 +29,55 @@ const SignIn = ({ onGoogleSignIn, loading = false, user = null }) => {
         try {
             setIsSigningIn(true);
             setError('');
-            await onGoogleSignIn();
+            await signInWithGoogle();
         } catch (error) {
-            console.error('Sign in failed:', error.message);
-            setError('Sign in failed. Please try again.');
+            console.error('Google sign in failed:', error.message);
+            setError('Google sign in failed. Please try again.');
         } finally {
             setIsSigningIn(false);
+        }
+    };
+
+    const handleEmailAuth = async (e) => {
+        e.preventDefault();
+
+        if (!email || !password) {
+            setError('Please enter both email and password');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+
+        try {
+            setEmailSignInLoading(true);
+            setError('');
+
+            if (isSignUp) {
+                const result = await signUpWithEmail(email, password);
+                if (result.user && !result.session) {
+                    setError('Please check your email and click the confirmation link to complete your registration.');
+                }
+            } else {
+                await signInWithEmail(email, password);
+            }
+        } catch (error) {
+            console.error('Email auth failed:', error.message);
+
+            // Handle specific Supabase error messages
+            if (error.message.includes('Invalid login credentials')) {
+                setError('Invalid email or password. Please try again.');
+            } else if (error.message.includes('User already registered')) {
+                setError('This email is already registered. Please sign in instead.');
+            } else if (error.message.includes('Email not confirmed')) {
+                setError('Please check your email and click the confirmation link first.');
+            } else {
+                setError(isSignUp ? 'Sign up failed. Please try again.' : 'Sign in failed. Please try again.');
+            }
+        } finally {
+            setEmailSignInLoading(false);
         }
     };
 
@@ -35,9 +85,8 @@ const SignIn = ({ onGoogleSignIn, loading = false, user = null }) => {
         <div className="signin-container">
             <div className="signin-wrapper">
                 <div className="signin-header">
-
-                    <h2>Welcome back!</h2>
-                    <p>Sign in to access your learning resources and continue your journey.</p>
+                    <h2>Welcome {isSignUp ? 'to our platform!' : 'back!'}</h2>
+                    <p>{isSignUp ? 'Create an account to start your learning journey.' : 'Sign in to access your learning resources and continue your journey.'}</p>
                 </div>
 
                 <div className="signin-form">
@@ -50,7 +99,7 @@ const SignIn = ({ onGoogleSignIn, loading = false, user = null }) => {
 
                     <button
                         onClick={handleGoogleSignIn}
-                        disabled={isSigningIn}
+                        disabled={isSigningIn || emailSignInLoading}
                         className={`google-signin-btn ${isSigningIn ? 'signing-in' : ''}`}
                     >
                         <div className="btn-content">
@@ -72,15 +121,59 @@ const SignIn = ({ onGoogleSignIn, loading = false, user = null }) => {
                         <span>or</span>
                     </div>
 
-                    <div className="email-signin">
+                    <form onSubmit={handleEmailAuth} className="email-signin">
                         <input
                             type="email"
                             placeholder="Enter your email"
                             className="email-input"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={emailSignInLoading || isSigningIn}
+                            required
                         />
-                        <button className="email-signin-btn">
-                            Continue with Email
+                        <input
+                            type="password"
+                            placeholder="Enter your password"
+                            className="email-input"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={emailSignInLoading || isSigningIn}
+                            required
+                            minLength="6"
+                        />
+                        <button
+                            type="submit"
+                            className="email-signin-btn"
+                            disabled={emailSignInLoading || isSigningIn}
+                        >
+                            {emailSignInLoading ? (
+                                <span>
+                                    <div className="signin-spinner"></div>
+                                    {isSignUp ? 'Creating Account...' : 'Signing in...'}
+                                </span>
+                            ) : (
+                                <span>{isSignUp ? 'Create Account' : 'Continue with Email'}</span>
+                            )}
                         </button>
+                    </form>
+
+                    <div className="auth-toggle">
+                        <p>
+                            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsSignUp(!isSignUp);
+                                    setError('');
+                                    setEmail('');
+                                    setPassword('');
+                                }}
+                                className="toggle-btn"
+                                disabled={emailSignInLoading || isSigningIn}
+                            >
+                                {isSignUp ? 'Sign In' : 'Sign Up'}
+                            </button>
+                        </p>
                     </div>
                 </div>
             </div>

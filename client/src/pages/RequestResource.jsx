@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './RequestForm.css';
+import './RequestResource.css';
 
-const RequestForm = () => {
+const RequestResource = () => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -15,14 +15,14 @@ const RequestForm = () => {
         priority: 'medium',
         contactEmail: ''
     });
-    
+
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [universities, setUniversities] = useState([]);
     const [domains, setDomains] = useState([]);
     const [subjects, setSubjects] = useState([]);
-    
+
     // Dropdown options
     const resourceTypes = [
         { value: 'university', label: 'University Resource' },
@@ -143,7 +143,7 @@ const RequestForm = () => {
             ...prev,
             [name]: value
         }));
-        
+
         // Clear error when user starts typing
         if (errors[name]) {
             setErrors(prev => ({
@@ -181,13 +181,13 @@ const RequestForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }
 
         setIsSubmitting(true);
-        
+
         try {
             // Prepare data based on resource type
             const submitData = {
@@ -230,12 +230,12 @@ const RequestForm = () => {
                 priority: 'medium',
                 contactEmail: ''
             });
-            
+
             // Reset success message after 5 seconds
             setTimeout(() => {
                 setSubmitSuccess(false);
             }, 5000);
-            
+
         } catch (error) {
             console.error('Error submitting request:', error);
             if (error.response?.data?.errors) {
@@ -260,7 +260,7 @@ const RequestForm = () => {
             <label htmlFor={name} className="form-label">
                 {label} {required && <span className="required">*</span>}
             </label>
-            
+
             {type === 'select' ? (
                 <select
                     id={name}
@@ -297,7 +297,7 @@ const RequestForm = () => {
                     placeholder={`Enter ${label.toLowerCase()}`}
                 />
             )}
-            
+
             {errors[name] && (
                 <p className="error-message">{errors[name]}</p>
             )}
@@ -325,12 +325,12 @@ const RequestForm = () => {
                 <form onSubmit={handleSubmit} className="request-form">
                     {renderField('title', 'Request Title', 'text')}
                     {renderField('description', 'Detailed Description', 'textarea')}
-                    
+
                     <div className="form-row">
                         {renderField('type', 'Resource Type', 'select', resourceTypes)}
                         {renderField('priority', 'Priority Level', 'select', priorityLevels)}
                     </div>
-                    
+
                     {formData.type === 'university' && (
                         <>
                             {renderField('university', 'University', 'select', universities)}
@@ -338,11 +338,11 @@ const RequestForm = () => {
                             {formData.domain && renderField('subject', 'Subject', 'select', subjects)}
                         </>
                     )}
-                    
+
                     {formData.type === 'skill' && (
                         renderField('skill', 'Skill Name', 'text')
                     )}
-                    
+
                     {formData.type === 'competitive' && (
                         renderField('exam', 'Exam Name', 'text')
                     )}
@@ -401,4 +401,4 @@ const RequestForm = () => {
     );
 };
 
-export default RequestForm; 
+export default RequestResource; 

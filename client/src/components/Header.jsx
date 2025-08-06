@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const location = useLocation();
+    const { user, signOut, loading } = useAuth();
 
     // Close menu on route change
     useEffect(() => {
         setIsMenuOpen(false);
+        setShowUserMenu(false);
     }, [location.pathname]);
 
     // Handle window resize
@@ -26,14 +31,19 @@ const Header = () => {
     // Handle escape key
     useEffect(() => {
         const handleEscape = (e) => {
-            if (e.key === 'Escape' && isMenuOpen) {
-                setIsMenuOpen(false);
+            if (e.key === 'Escape') {
+                if (isMenuOpen) {
+                    setIsMenuOpen(false);
+                }
+                if (showUserMenu) {
+                    setShowUserMenu(false);
+                }
             }
         };
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [isMenuOpen]);
+    }, [isMenuOpen, showUserMenu]);
 
     // Prevent body scroll when menu is open
     useEffect(() => {
@@ -43,6 +53,18 @@ const Header = () => {
         };
     }, [isMenuOpen]);
 
+    // Close user menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showUserMenu && !event.target.closest('.user-menu-container')) {
+                setShowUserMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showUserMenu]);
+
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
@@ -51,7 +73,49 @@ const Header = () => {
         setIsMenuOpen(false);
     };
 
+    const toggleUserMenu = () => {
+        setShowUserMenu(!showUserMenu);
+    };
+
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            await signOut();
+        } catch (error) {
+            console.error('Logout failed:', error);
+            alert('Logout failed. Please try again.');
+        } finally {
+            setIsLoggingOut(false);
+            setShowUserMenu(false);
+            setIsMenuOpen(false);
+        }
+    };
+
     const isActive = (path) => location.pathname === path;
+
+    const getUserInitials = () => {
+        if (!user) return '';
+
+        if (user.user_metadata?.full_name) {
+            return user.user_metadata.full_name
+                .split(' ')
+                .map(name => name.charAt(0))
+                .join('')
+                .toUpperCase()
+                .substring(0, 2);
+        }
+
+        if (user.email) {
+            return user.email.charAt(0).toUpperCase();
+        }
+
+        return 'U';
+    };
+
+    const getUserDisplayName = () => {
+        if (!user) return '';
+        return user.user_metadata?.full_name || user.email || 'User';
+    };
 
     return (
         <header className="header">
@@ -104,6 +168,80 @@ const Header = () => {
                 >
                     Our Story
                 </Link>
+
+                {/* Authentication Section */}
+                {!loading && (
+                    <>
+                        {user ? (
+                            // User is logged in - show user menu
+                            <div className="user-menu-container">
+                                <button
+                                    className="user-avatar-btn"
+                                    onClick={toggleUserMenu}
+                                    aria-label="User menu"
+                                    aria-expanded={showUserMenu}
+                                >
+                                    <div className="user-avatar">
+                                        {user.user_metadata?.avatar_url ? (
+                                            <img
+                                                src={user.user_metadata.avatar_url}
+                                                alt="User avatar"
+                                                className="avatar-image"
+                                            />
+                                        ) : (
+                                            <span className="avatar-initials">
+                                                {getUserInitials()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <svg className="dropdown-arrow" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+
+                                {showUserMenu && (
+                                    <div className="user-dropdown">
+                                        <div className="user-info">
+                                            <div className="user-name">{getUserDisplayName()}</div>
+                                            <div className="user-email">{user.email}</div>
+                                        </div>
+                                        <hr className="dropdown-divider" />
+                                        <Link
+                                            to="/dashboard"
+                                            className="dropdown-link"
+                                            onClick={() => {
+                                                setShowUserMenu(false);
+                                                closeMenu();
+                                            }}
+                                        >
+                                            <span className="dropdown-icon">📊</span>
+                                            Dashboard
+                                        </Link>
+
+                                        <hr className="dropdown-divider" />
+                                        <button
+                                            onClick={handleLogout}
+                                            disabled={isLoggingOut}
+                                            className="dropdown-link logout-btn"
+                                        >
+                                            <span className="dropdown-icon">🚪</span>
+                                            {isLoggingOut ? 'Signing out...' : 'Sign Out'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            // User is not logged in - show sign in link
+                            <Link
+                                to="/signin"
+                                className={`nav-link auth-link ${isActive('/signin') ? 'active' : ''}`}
+                                onClick={closeMenu}
+                            >
+                                Sign In
+                            </Link>
+                        )}
+                    </>
+                )}
             </nav>
         </header>
     );
