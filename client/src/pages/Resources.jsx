@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../context/authContext';
+import { useAuth } from '../context/AuthContext';
 import dummyData from '../data/dummyData.json';
 import './Resources.css';
 
 const Resources = () => {
-    const { authState } = useContext(AuthContext);
+    const { user } = useAuth();
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -131,7 +131,7 @@ const Resources = () => {
     };
 
     const handleSaveResource = (resourceId) => {
-        if (!authState.isAuthenticated) {
+        if (!user) {
             alert('Please login to save resources');
             return;
         }
@@ -173,7 +173,7 @@ const Resources = () => {
                                 {resource.type}
                             </div>
                             <div className="card-actions">
-                                {authState.isAuthenticated && (
+                                {user && (
                                     <button
                                         className="save-btn"
                                         onClick={(e) => {
@@ -278,9 +278,9 @@ const Resources = () => {
                             <button
                                 className="save-resource-btn"
                                 onClick={() => handleSaveResource(selectedResource._id)}
-                                disabled={!authState.isAuthenticated}
+                                disabled={!user}
                             >
-                                {authState.isAuthenticated ? 'Save Resource' : 'Login to Save'}
+                                {user ? 'Save Resource' : 'Login to Save'}
                             </button>
                             <button className="share-resource-btn" disabled>
                                 Share (Coming Soon)

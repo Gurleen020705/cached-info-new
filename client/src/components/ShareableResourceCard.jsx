@@ -1,37 +1,22 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/authContext';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import './ShareableResourceCard.css';
 
 const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) => {
-  const { authState } = useAuth();
+  const { user } = useAuth();
   const [isSharing, setIsSharing] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleSave = async () => {
-    if (!authState.isAuthenticated) {
+    if (!user) {
       alert('Please log in to save resources');
       return;
     }
 
-    try {
-      if (isSaved) {
-        await axios.delete(`/api/users/saved-resources/${resource._id}`, {
-          headers: { 'x-auth-token': authState.token }
-        });
-        onRemove(resource._id);
-      } else {
-        await axios.post('/api/users/saved-resources', 
-          { resourceId: resource._id },
-          { headers: { 'x-auth-token': authState.token } }
-        );
-        onSave(resource);
-      }
-    } catch (error) {
-      console.error('Error saving/removing resource:', error);
-    }
+
   };
 
   const generateShareLink = async () => {
@@ -63,7 +48,7 @@ const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) 
   const shareOnSocialMedia = (platform) => {
     const text = `Check out this resource: ${resource.title}`;
     const url = shareLink;
-    
+
     let shareUrl = '';
     switch (platform) {
       case 'twitter':
@@ -78,7 +63,7 @@ const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) 
       default:
         return;
     }
-    
+
     window.open(shareUrl, '_blank', 'width=600,height=400');
   };
 
@@ -90,7 +75,7 @@ const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) 
             {resource.type}
           </div>
           <div className="card-actions">
-            {authState.isAuthenticated && (
+            {user && (
               <button
                 className={`save-btn ${isSaved ? 'saved' : ''}`}
                 onClick={handleSave}
@@ -113,7 +98,7 @@ const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) 
         <div className="card-content">
           <h3 className="resource-title">{resource.title}</h3>
           <p className="resource-description">{resource.description}</p>
-          
+
           <div className="resource-meta">
             {resource.university && (
               <span className="meta-item">
@@ -171,7 +156,7 @@ const ShareableResourceCard = ({ resource, onSave, onRemove, isSaved = false }) 
                 ×
               </button>
             </div>
-            
+
             <div className="modal-content">
               <div className="share-link-section">
                 <label>Share Link:</label>

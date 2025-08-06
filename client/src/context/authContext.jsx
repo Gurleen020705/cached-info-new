@@ -1,123 +1,63 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useCallback,
-  useContext
-} from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '../supabaseClient' // adjust path to your supabase config
 
-const AuthContext = createContext();
+const AuthContext = createContext({})
 
-const AuthProvider = ({ children }) => {
-  const [authState, setAuthState] = useState({
-    token: localStorage.getItem('token'),
-    user: null,
-    isAuthenticated: null,
-    loading: true
-  });
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider')
+  }
+  return context
+}
 
-  const navigate = useNavigate();
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  // ✅ Memoized loadUser function
-  const loadUser = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/auth/user', {
-        headers: {
-          'x-auth-token': authState.token
-        }
-      });
-      setAuthState(prev => ({
-        ...prev,
-        user: res.data,
-        isAuthenticated: true,
-        loading: false
-      }));
-    } catch (err) {
-      localStorage.removeItem('token');
-      setAuthState({
-        token: null,
-        user: null,
-        isAuthenticated: false,
-        loading: false
-      });
-    }
-  }, [authState.token]);
-
-  // ✅ Safe and compliant useEffect
   useEffect(() => {
-    if (authState.token) {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      loadUser();
-    } else {
-      setAuthState(prev => ({ ...prev, loading: false }));
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(session?.user ?? null)
+      setLoading(false)
     }
-  }, [authState.token, loadUser]);
 
-  // Google login with role-based redirect
-  const googleLogin = async (tokenId) => {
-    try {
-      const res = await axios.post('/api/auth/google', { tokenId });
-      const { token, user } = res.data;
+    getInitialSession()
 
-      localStorage.setItem('token', token);
-      setAuthState({
-        token,
-        user,
-        isAuthenticated: true,
-        loading: false
-      });
-
-      // Role-based redirect
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null)
+        setLoading(false)
       }
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      throw err;
-    }
-  };
+    )
 
-  // Logout
-  const logout = () => {
-    localStorage.removeItem('token');
-    setAuthState({
-      token: null,
-      user: null,
-      isAuthenticated: false,
-      loading: false
-    });
-    navigate('/login');
-  };
+    return () => subscription?.unsubscribe()
+  }, [])
 
-  // Check if user is admin
-  const isAdmin = () => {
-    return authState.user?.role === 'admin';
-  };
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    })
+    if (error) throw error
+  }
 
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return authState.isAuthenticated && !!authState.user;
-  };
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  }
+
+  const value = {
+    user,
+    loading,
+    signInWithGoogle,
+    signOut,
+  }
 
   return (
-    <AuthContext.Provider
-      value={{
-        authState,
-        googleLogin,
-        logout,
-        loadUser,
-        isAdmin,
-        isAuthenticated
-      }}
-    >
-      {!authState.loading && children}
+    <AuthContext.Provider value={value}>
+      {children}
     </AuthContext.Provider>
-  );
-};
-
-export { AuthContext, AuthProvider };
-export const useAuth = () => useContext(AuthContext);
+  )
+}

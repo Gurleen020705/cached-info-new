@@ -1,21 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import ShareableResourceCard from '../components/ShareableResourceCard';
 import './HomePage.css';
 import dummyData from '../data/dummyData.json';
 
 const HomePage = () => {
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [autocompleteResults, setAutocompleteResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showAutocomplete, setShowAutocomplete] = useState(false);
     const [recentResources, setRecentResources] = useState([]);
+    const [savedResources, setSavedResources] = useState([]);
     const [stats, setStats] = useState({
         totalResources: 0,
         totalUsers: 0,
         totalRequests: 0
     });
     const [allSearchableTerms, setAllSearchableTerms] = useState([]);
+
+    // Modal states
+    const [selectedResource, setSelectedResource] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
     const searchInputRef = useRef(null);
     const autocompleteRef = useRef(null);
@@ -87,6 +95,7 @@ const HomePage = () => {
         setAllSearchableTerms(terms);
         loadRecentResources();
         loadStats();
+        loadSavedResources();
     }, []);
 
     // Handle autocomplete as user types
@@ -130,6 +139,7 @@ const HomePage = () => {
                             _id: `resource_${university._id}_${domain._id}_${subject._id}_${resource._id}`,
                             title: resource.details.title,
                             description: resource.details.description,
+                            url: resource.details.url || '#',
                             type: 'university',
                             university: {
                                 name: university.name,
@@ -142,6 +152,9 @@ const HomePage = () => {
                             subject: {
                                 name: subject.name,
                                 _id: subject._id
+                            },
+                            submittedBy: {
+                                name: 'Anonymous'
                             },
                             dateAdded: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
                         });
@@ -156,32 +169,40 @@ const HomePage = () => {
                 _id: 'skill_001',
                 title: 'Full Stack Web Development Bootcamp',
                 description: 'Complete guide to modern web development including React, Node.js, MongoDB, and deployment strategies.',
+                url: 'https://example.com/fullstack-bootcamp',
                 type: 'skill',
-                subject: { name: 'Web Development' },
+                skill: 'Web Development',
+                submittedBy: { name: 'TechEducator' },
                 dateAdded: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
             },
             {
                 _id: 'skill_002',
                 title: 'Data Science with Python',
                 description: 'Learn data analysis, visualization, and machine learning using Python, pandas, and scikit-learn.',
+                url: 'https://example.com/data-science-python',
                 type: 'skill',
-                subject: { name: 'Data Science' },
+                skill: 'Data Science',
+                submittedBy: { name: 'DataExpert' },
                 dateAdded: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
             },
             {
                 _id: 'competitive_001',
                 title: 'GATE Computer Science Preparation',
                 description: 'Comprehensive preparation materials for GATE CS including previous years papers, mock tests, and solutions.',
+                url: 'https://example.com/gate-cs-prep',
                 type: 'competitive',
-                subject: { name: 'GATE CS' },
+                exam: 'GATE CS',
+                submittedBy: { name: 'ExamPrep' },
                 dateAdded: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
             },
             {
                 _id: 'competitive_002',
                 title: 'JEE Advanced Physics',
                 description: 'Advanced physics problems and solutions for JEE preparation with detailed explanations.',
+                url: 'https://example.com/jee-physics',
                 type: 'competitive',
-                subject: { name: 'JEE Physics' },
+                exam: 'JEE Advanced',
+                submittedBy: { name: 'PhysicsGuru' },
                 dateAdded: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
             }
         ];
@@ -199,6 +220,12 @@ const HomePage = () => {
         } catch (error) {
             console.error('Error loading recent resources:', error);
         }
+    };
+
+    const loadSavedResources = () => {
+        // Load saved resources from localStorage or API
+        const saved = JSON.parse(localStorage.getItem('savedResources') || '[]');
+        setSavedResources(saved);
     };
 
     const loadStats = () => {
@@ -219,6 +246,29 @@ const HomePage = () => {
         }
     };
 
+    const handleSaveResource = (resource) => {
+        const newSavedResources = [...savedResources, resource._id];
+        setSavedResources(newSavedResources);
+        localStorage.setItem('savedResources', JSON.stringify(newSavedResources));
+    };
+
+    const handleRemoveResource = (resourceId) => {
+        const newSavedResources = savedResources.filter(id => id !== resourceId);
+        setSavedResources(newSavedResources);
+        localStorage.setItem('savedResources', JSON.stringify(newSavedResources));
+    };
+
+    // Modal functions
+    const handleResourceClick = (resource) => {
+        setSelectedResource(resource);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedResource(null);
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
@@ -235,7 +285,9 @@ const HomePage = () => {
                     resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (resource.subject && resource.subject.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
                     (resource.domain && resource.domain.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                    (resource.university && resource.university.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    (resource.university && resource.university.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (resource.skill && resource.skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (resource.exam && resource.exam.toLowerCase().includes(searchQuery.toLowerCase()))
                 );
 
                 setSearchResults(filteredResults.slice(0, 5));
@@ -260,11 +312,6 @@ const HomePage = () => {
 
         // Automatically trigger search with the selected term
         setTimeout(() => {
-            const syntheticEvent = {
-                preventDefault: () => { }
-            };
-            // Set the search query first, then trigger search
-            setSearchQuery(selectedTerm.text);
             handleSearchWithQuery(selectedTerm.text);
         }, 100);
     };
@@ -280,7 +327,9 @@ const HomePage = () => {
                     resource.description.toLowerCase().includes(query.toLowerCase()) ||
                     (resource.subject && resource.subject.name.toLowerCase().includes(query.toLowerCase())) ||
                     (resource.domain && resource.domain.name.toLowerCase().includes(query.toLowerCase())) ||
-                    (resource.university && resource.university.name.toLowerCase().includes(query.toLowerCase()))
+                    (resource.university && resource.university.name.toLowerCase().includes(query.toLowerCase())) ||
+                    (resource.skill && resource.skill.toLowerCase().includes(query.toLowerCase())) ||
+                    (resource.exam && resource.exam.toLowerCase().includes(query.toLowerCase()))
                 );
 
                 setSearchResults(filteredResults.slice(0, 5));
@@ -421,7 +470,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Recent Resources Section */}
+            {/* Recent Resources Section - Now using ShareableResourceCard */}
             <section className="recent-resources">
                 <div className="section-header">
                     <h2>Recently Added Resources</h2>
@@ -430,31 +479,14 @@ const HomePage = () => {
 
                 <div className="resources-grid">
                     {recentResources.map((resource) => (
-                        <div key={resource._id} className="resource-card">
-                            <div className="resource-type-badge">
-                                {resource.type === 'university' && '🎓 University'}
-                                {resource.type === 'skill' && '💡 Skill'}
-                                {resource.type === 'competitive' && '📚 Exam'}
-                            </div>
-                            <h3 className="resource-title">{resource.title}</h3>
-                            <p className="resource-description">
-                                {resource.description.substring(0, 100)}...
-                            </p>
-                            <div className="resource-meta">
-                                {resource.university && (
-                                    <span className="meta-item">🏫 {resource.university.name}</span>
-                                )}
-                                {resource.subject && (
-                                    <span className="meta-item">📖 {resource.subject.name}</span>
-                                )}
-                                {resource.domain && (
-                                    <span className="meta-item">🎯 {resource.domain.name}</span>
-                                )}
-                            </div>
-                            <Link to={`/resources/${resource._id}`} className="resource-link">
-                                View Details →
-                            </Link>
-                        </div>
+                        <ShareableResourceCard
+                            key={resource._id}
+                            resource={resource}
+                            onSave={handleSaveResource}
+                            onRemove={handleRemoveResource}
+                            isSaved={savedResources.includes(resource._id)}
+                            onViewDetails={handleResourceClick}
+                        />
                     ))}
                 </div>
             </section>
@@ -491,6 +523,94 @@ const HomePage = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Modal - Similar to Resources.jsx */}
+            {showModal && selectedResource && (
+                <div className="modal-overlay" onClick={closeModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>{selectedResource.title}</h3>
+                            <button className="close-btn" onClick={closeModal}>×</button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="resource-details">
+                                {selectedResource.university && (
+                                    <div className="detail-item">
+                                        <strong>University:</strong> {selectedResource.university.name}
+                                    </div>
+                                )}
+                                {selectedResource.domain && (
+                                    <div className="detail-item">
+                                        <strong>Domain:</strong> {selectedResource.domain.name}
+                                    </div>
+                                )}
+                                {selectedResource.subject && (
+                                    <div className="detail-item">
+                                        <strong>Subject:</strong> {selectedResource.subject.name}
+                                    </div>
+                                )}
+                                {selectedResource.skill && (
+                                    <div className="detail-item">
+                                        <strong>Skill:</strong> {selectedResource.skill}
+                                    </div>
+                                )}
+                                {selectedResource.exam && (
+                                    <div className="detail-item">
+                                        <strong>Exam:</strong> {selectedResource.exam}
+                                    </div>
+                                )}
+                                <div className="detail-item">
+                                    <strong>Type:</strong> {selectedResource.type}
+                                </div>
+                                <div className="detail-item">
+                                    <strong>Submitted by:</strong> {selectedResource.submittedBy?.name || 'Anonymous'}
+                                </div>
+                            </div>
+
+                            <div className="description-section">
+                                <h4>Description:</h4>
+                                <p>{selectedResource.description}</p>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                className="save-resource-btn"
+                                onClick={() => {
+                                    if (savedResources.includes(selectedResource._id)) {
+                                        handleRemoveResource(selectedResource._id);
+                                    } else {
+                                        handleSaveResource(selectedResource);
+                                    }
+                                }}
+                                disabled={!user}
+                            >
+                                {!user
+                                    ? 'Login to Save'
+                                    : savedResources.includes(selectedResource._id)
+                                        ? 'Remove from Saved'
+                                        : 'Save Resource'
+                                }
+                            </button>
+                            <a
+                                href={selectedResource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="save-resource-btn"
+                                style={{
+                                    background: '#007bff',
+                                    textDecoration: 'none',
+                                    display: 'inline-block',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                Visit Resource
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
