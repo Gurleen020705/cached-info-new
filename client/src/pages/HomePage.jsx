@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import './HomePage.css';
+import dummyData from '../data/dummyData.json';
 
 const HomePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -16,36 +16,102 @@ const HomePage = () => {
 
     // Fetch recent resources and stats on component mount
     useEffect(() => {
-        fetchRecentResources();
-        fetchStats();
+        loadRecentResources();
+        loadStats();
     }, []);
 
-    const fetchRecentResources = async () => {
+    // Transform dummy data into resources format
+    const transformDummyDataToResources = () => {
+        const resources = [];
+
+        dummyData.universities.forEach(university => {
+            university.domains.forEach(domain => {
+                domain.subjects.forEach(subject => {
+                    resources.push({
+                        _id: `resource_${university._id}_${domain._id}_${subject._id}`,
+                        title: `${subject.name} - ${university.name}`,
+                        description: `Comprehensive learning materials for ${subject.name} in ${domain.name} at ${university.name}. This resource includes lecture notes, assignments, and study guides.`,
+                        type: 'university',
+                        university: {
+                            name: university.name,
+                            _id: university._id
+                        },
+                        domain: {
+                            name: domain.name,
+                            _id: domain._id
+                        },
+                        subject: {
+                            name: subject.name,
+                            _id: subject._id
+                        },
+                        dateAdded: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // Random date within last 30 days
+                    });
+                });
+            });
+        });
+
+        // Add some skill-based and competitive exam resources
+        const additionalResources = [
+            {
+                _id: 'skill_001',
+                title: 'Full Stack Web Development Bootcamp',
+                description: 'Complete guide to modern web development including React, Node.js, MongoDB, and deployment strategies.',
+                type: 'skill',
+                subject: { name: 'Web Development' },
+                dateAdded: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                _id: 'skill_002',
+                title: 'Data Science with Python',
+                description: 'Learn data analysis, visualization, and machine learning using Python, pandas, and scikit-learn.',
+                type: 'skill',
+                subject: { name: 'Data Science' },
+                dateAdded: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                _id: 'competitive_001',
+                title: 'GATE Computer Science Preparation',
+                description: 'Comprehensive preparation materials for GATE CS including previous years papers, mock tests, and solutions.',
+                type: 'competitive',
+                subject: { name: 'GATE CS' },
+                dateAdded: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                _id: 'competitive_002',
+                title: 'JEE Advanced Physics',
+                description: 'Advanced physics problems and solutions for JEE preparation with detailed explanations.',
+                type: 'competitive',
+                subject: { name: 'JEE Physics' },
+                dateAdded: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+            }
+        ];
+
+        return [...resources, ...additionalResources];
+    };
+
+    const loadRecentResources = () => {
         try {
-            const response = await axios.get('/api/resources?limit=6');
-            setRecentResources(response.data);
+            const allResources = transformDummyDataToResources();
+            // Sort by date and get the 6 most recent
+            const recent = allResources
+                .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
+                .slice(0, 6);
+            setRecentResources(recent);
         } catch (error) {
-            console.error('Error fetching recent resources:', error);
+            console.error('Error loading recent resources:', error);
         }
     };
 
-    const fetchStats = async () => {
+    const loadStats = () => {
         try {
-            // You can create these endpoints in your backend
-            const [resourcesRes, usersRes, requestsRes] = await Promise.all([
-                axios.get('/api/resources/count'),
-                axios.get('/api/users/count'),
-                axios.get('/api/requests/count')
-            ]);
-            
+            const allResources = transformDummyDataToResources();
             setStats({
-                totalResources: resourcesRes.data.count || 0,
-                totalUsers: usersRes.data.count || 0,
-                totalRequests: requestsRes.data.count || 0
+                totalResources: allResources.length,
+                totalUsers: 1250, // Static dummy value
+                totalRequests: 48   // Static dummy value
             });
         } catch (error) {
-            console.error('Error fetching stats:', error);
-            // Set default stats if API is not available
+            console.error('Error loading stats:', error);
             setStats({
                 totalResources: 150,
                 totalUsers: 1200,
@@ -54,20 +120,32 @@ const HomePage = () => {
         }
     };
 
-    const handleSearch = async (e) => {
+    const handleSearch = (e) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
-        try {
-            const response = await axios.get(`/api/search?q=${encodeURIComponent(searchQuery)}`);
-            setSearchResults(response.data);
-        } catch (error) {
-            console.error('Search error:', error);
-            setSearchResults([]);
-        } finally {
-            setIsSearching(false);
-        }
+
+        // Simulate API delay
+        setTimeout(() => {
+            try {
+                const allResources = transformDummyDataToResources();
+                const filteredResults = allResources.filter(resource =>
+                    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (resource.subject && resource.subject.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (resource.domain && resource.domain.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                    (resource.university && resource.university.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                );
+
+                setSearchResults(filteredResults.slice(0, 5)); // Limit to 5 results for dropdown
+            } catch (error) {
+                console.error('Search error:', error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500); // 500ms delay to simulate API call
     };
 
     const handleSearchInputChange = (e) => {
@@ -87,7 +165,7 @@ const HomePage = () => {
                         <span className="highlight"> That Matter</span>
                     </h1>
                     <p className="hero-subtitle">
-                        Find the best educational resources for your academic journey. 
+                        Find the best educational resources for your academic journey.
                         From university materials to skill development, we've got you covered.
                     </p>
 
@@ -118,9 +196,9 @@ const HomePage = () => {
                         {searchResults.length > 0 && (
                             <div className="search-results">
                                 {searchResults.map((result, index) => (
-                                    <Link 
-                                        key={index} 
-                                        to={`/resources/${result._id}`} 
+                                    <Link
+                                        key={index}
+                                        to={`/resources/${result._id}`}
                                         className="search-result-item"
                                         onClick={() => setSearchResults([])}
                                     >
@@ -177,7 +255,7 @@ const HomePage = () => {
                     <h2>Recently Added Resources</h2>
                     <Link to="/resources" className="view-all-link">View All Resources</Link>
                 </div>
-                
+
                 <div className="resources-grid">
                     {recentResources.map((resource) => (
                         <div key={resource._id} className="resource-card">
@@ -196,6 +274,9 @@ const HomePage = () => {
                                 )}
                                 {resource.subject && (
                                     <span className="meta-item">📖 {resource.subject.name}</span>
+                                )}
+                                {resource.domain && (
+                                    <span className="meta-item">🎯 {resource.domain.name}</span>
                                 )}
                             </div>
                             <Link to={`/resources/${resource._id}`} className="resource-link">
@@ -242,4 +323,4 @@ const HomePage = () => {
     );
 };
 
-export default HomePage; 
+export default HomePage;

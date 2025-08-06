@@ -16,9 +16,11 @@ import {
     StepLabel,
     Box
 } from '@material-ui/core';
-import axios from 'axios';
 
-const ResourceSubmissionForm = ({ open, onClose }) => {
+// Import your dummy data
+import dummyData from '../data/dummyData.json';
+
+const SubmitResourceOld = ({ open, onClose }) => {
     const [activeStep, setActiveStep] = useState(0);
     const [resourceType, setResourceType] = useState('');
     const [formData, setFormData] = useState({
@@ -45,6 +47,11 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         } catch (_) {
             return false;
         }
+    };
+
+    // Helper function to simulate API delay
+    const simulateApiDelay = (ms = 300) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
     };
 
     // Reset form to initial state
@@ -74,12 +81,13 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         }
     }, [open]);
 
+    // Load universities when resource type is 'university'
     useEffect(() => {
         if (resourceType === 'university') {
             const fetchUniversities = async () => {
                 try {
-                    const res = await axios.get('/api/universities');
-                    setUniversities(res.data);
+                    await simulateApiDelay(); // Simulate API call delay
+                    setUniversities(dummyData.universities);
                 } catch (err) {
                     console.error(err);
                 }
@@ -88,12 +96,19 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         }
     }, [resourceType]);
 
+    // Load domains when university is selected
     useEffect(() => {
         if (formData.university) {
             const fetchDomains = async () => {
                 try {
-                    const res = await axios.get(`/api/universities/${formData.university}/domains`);
-                    setDomains(res.data);
+                    await simulateApiDelay(); // Simulate API call delay
+                    const selectedUniversity = dummyData.universities.find(
+                        uni => uni._id === formData.university
+                    );
+                    setDomains(selectedUniversity?.domains || []);
+                    // Clear dependent fields
+                    setFormData(prev => ({ ...prev, domain: '', subject: '' }));
+                    setSubjects([]);
                 } catch (err) {
                     console.error(err);
                 }
@@ -102,12 +117,21 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         }
     }, [formData.university]);
 
+    // Load subjects when domain is selected
     useEffect(() => {
         if (formData.domain) {
             const fetchSubjects = async () => {
                 try {
-                    const res = await axios.get(`/api/domains/${formData.domain}/subjects`);
-                    setSubjects(res.data);
+                    await simulateApiDelay(); // Simulate API call delay
+                    const selectedUniversity = dummyData.universities.find(
+                        uni => uni._id === formData.university
+                    );
+                    const selectedDomain = selectedUniversity?.domains.find(
+                        domain => domain._id === formData.domain
+                    );
+                    setSubjects(selectedDomain?.subjects || []);
+                    // Clear dependent field
+                    setFormData(prev => ({ ...prev, subject: '' }));
                 } catch (err) {
                     console.error(err);
                 }
@@ -164,29 +188,58 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
         setIsSubmitting(true);
 
         try {
+            await simulateApiDelay(1000); // Simulate API submission delay
+
             const payload = {
+                id: `resource_${Date.now()}`,
                 title: formData.title,
                 description: formData.description,
                 url: formData.url,
-                type: resourceType
+                type: resourceType,
+                submittedAt: new Date().toISOString()
             };
 
             if (resourceType === 'university') {
-                payload.university = formData.university;
-                payload.domain = formData.domain;
-                payload.subject = formData.subject;
+                // Get readable names for display
+                const selectedUniversity = dummyData.universities.find(
+                    uni => uni._id === formData.university
+                );
+                const selectedDomain = selectedUniversity?.domains.find(
+                    domain => domain._id === formData.domain
+                );
+                const selectedSubject = selectedDomain?.subjects.find(
+                    subject => subject._id === formData.subject
+                );
+
+                payload.university = {
+                    id: formData.university,
+                    name: selectedUniversity?.name
+                };
+                payload.domain = {
+                    id: formData.domain,
+                    name: selectedDomain?.name
+                };
+                payload.subject = {
+                    id: formData.subject,
+                    name: selectedSubject?.name
+                };
             } else if (resourceType === 'skill') {
                 payload.skill = formData.skill;
             } else if (resourceType === 'competitive') {
                 payload.exam = formData.exam;
             }
 
-            await axios.post('/api/resources', payload);
+            // In a real app, you would save this to your backend
+            // For now, we'll just log it and simulate success
+            console.log('Resource submitted:', payload);
+
+            // Show success message and close dialog
+            alert('Resource submitted successfully!');
             onClose(true);
             resetForm();
         } catch (err) {
             console.error(err);
-            setErrors({ submit: err.response?.data?.msg || 'Submission failed' });
+            setErrors({ submit: 'Submission failed. Please try again.' });
         } finally {
             setIsSubmitting(false);
         }
@@ -400,4 +453,4 @@ const ResourceSubmissionForm = ({ open, onClose }) => {
     );
 };
 
-export default ResourceSubmissionForm;
+export default SubmitResourceOld;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/authContext';
 import axios from 'axios';
-import ResourceCard from './ResourceCard';
+import ResourceCard from './ShareableResourceCard';
 import './Profile.css';
 
 const Profile = () => {

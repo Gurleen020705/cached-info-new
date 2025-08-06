@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './ResourceForm.css';
+import './SubmitResource.css';
+import dummyData from '../data/dummyData.json';
 
-const ResourceForm = () => {
+const SubmitResource = () => {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -35,82 +35,124 @@ const ResourceForm = () => {
         { value: 'competitive', label: 'Competitive Exam' }
     ];
 
-    // Fetch initial data on component mount
+    // Dummy skill categories and skills
+    const dummySkillCategories = [
+        { _id: 'skill_cat_001', name: 'Programming Languages' },
+        { _id: 'skill_cat_002', name: 'Web Development' },
+        { _id: 'skill_cat_003', name: 'Data Science' },
+        { _id: 'skill_cat_004', name: 'Design' }
+    ];
+
+    const dummySkills = {
+        'skill_cat_001': [
+            { _id: 'skill_001', name: 'JavaScript' },
+            { _id: 'skill_002', name: 'Python' },
+            { _id: 'skill_003', name: 'Java' },
+            { _id: 'skill_004', name: 'C++' }
+        ],
+        'skill_cat_002': [
+            { _id: 'skill_005', name: 'React' },
+            { _id: 'skill_006', name: 'Angular' },
+            { _id: 'skill_007', name: 'Vue.js' },
+            { _id: 'skill_008', name: 'Node.js' }
+        ],
+        'skill_cat_003': [
+            { _id: 'skill_009', name: 'Machine Learning' },
+            { _id: 'skill_010', name: 'Data Analysis' },
+            { _id: 'skill_011', name: 'SQL' },
+            { _id: 'skill_012', name: 'R Programming' }
+        ],
+        'skill_cat_004': [
+            { _id: 'skill_013', name: 'UI/UX Design' },
+            { _id: 'skill_014', name: 'Graphic Design' },
+            { _id: 'skill_015', name: 'Figma' },
+            { _id: 'skill_016', name: 'Adobe Creative Suite' }
+        ]
+    };
+
+    // Dummy exam categories and exams
+    const dummyExamCategories = [
+        { _id: 'exam_cat_001', name: 'Engineering' },
+        { _id: 'exam_cat_002', name: 'Medical' },
+        { _id: 'exam_cat_003', name: 'Management' },
+        { _id: 'exam_cat_004', name: 'Government Jobs' }
+    ];
+
+    const dummyExams = {
+        'exam_cat_001': [
+            { _id: 'exam_001', name: 'JEE Main' },
+            { _id: 'exam_002', name: 'JEE Advanced' },
+            { _id: 'exam_003', name: 'GATE' },
+            { _id: 'exam_004', name: 'BITSAT' }
+        ],
+        'exam_cat_002': [
+            { _id: 'exam_005', name: 'NEET' },
+            { _id: 'exam_006', name: 'AIIMS' },
+            { _id: 'exam_007', name: 'JIPMER' }
+        ],
+        'exam_cat_003': [
+            { _id: 'exam_008', name: 'CAT' },
+            { _id: 'exam_009', name: 'XAT' },
+            { _id: 'exam_010', name: 'GMAT' },
+            { _id: 'exam_011', name: 'GRE' }
+        ],
+        'exam_cat_004': [
+            { _id: 'exam_012', name: 'UPSC Civil Services' },
+            { _id: 'exam_013', name: 'SSC CGL' },
+            { _id: 'exam_014', name: 'Banking PO' },
+            { _id: 'exam_015', name: 'Railway Recruitment' }
+        ]
+    };
+
+    // Load initial data on component mount
     useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const [universitiesRes, skillCategoriesRes, examCategoriesRes] = await Promise.all([
-                    axios.get('/api/universities'),
-                    axios.get('/api/skills/categories'),
-                    axios.get('/api/exams/categories')
-                ]);
-                setUniversities(universitiesRes.data);
-                setSkillCategories(skillCategoriesRes.data);
-                setExamCategories(examCategoriesRes.data);
-            } catch (err) {
-                console.error('Error fetching initial data:', err);
-            }
-        };
-        fetchInitialData();
+        setUniversities(dummyData.universities);
+        setSkillCategories(dummySkillCategories);
+        setExamCategories(dummyExamCategories);
     }, []);
 
-    // Fetch domains when university changes
+    // Load domains when university changes
     useEffect(() => {
         if (formData.university) {
-            const fetchDomains = async () => {
-                try {
-                    const res = await axios.get(`/api/universities/${formData.university}/domains`);
-                    setDomains(res.data);
-                } catch (err) {
-                    console.error('Error fetching domains:', err);
-                }
-            };
-            fetchDomains();
+            const selectedUniversity = dummyData.universities.find(uni => uni._id === formData.university);
+            if (selectedUniversity) {
+                setDomains(selectedUniversity.domains);
+            }
+        } else {
+            setDomains([]);
         }
     }, [formData.university]);
 
-    // Fetch subjects when domain changes
+    // Load subjects when domain changes
     useEffect(() => {
         if (formData.domain) {
-            const fetchSubjects = async () => {
-                try {
-                    const res = await axios.get(`/api/domains/${formData.domain}/subjects`);
-                    setSubjects(res.data);
-                } catch (err) {
-                    console.error('Error fetching subjects:', err);
+            const selectedUniversity = dummyData.universities.find(uni => uni._id === formData.university);
+            if (selectedUniversity) {
+                const selectedDomain = selectedUniversity.domains.find(domain => domain._id === formData.domain);
+                if (selectedDomain) {
+                    setSubjects(selectedDomain.subjects);
                 }
-            };
-            fetchSubjects();
+            }
+        } else {
+            setSubjects([]);
         }
-    }, [formData.domain]);
+    }, [formData.domain, formData.university]);
 
-    // Fetch skills when skill category changes
+    // Load skills when skill category changes
     useEffect(() => {
         if (formData.skillCategory) {
-            const fetchSkills = async () => {
-                try {
-                    const res = await axios.get(`/api/skills/category/${formData.skillCategory}`);
-                    setSkills(res.data);
-                } catch (err) {
-                    console.error('Error fetching skills:', err);
-                }
-            };
-            fetchSkills();
+            setSkills(dummySkills[formData.skillCategory] || []);
+        } else {
+            setSkills([]);
         }
     }, [formData.skillCategory]);
 
-    // Fetch exams when exam category changes
+    // Load exams when exam category changes
     useEffect(() => {
         if (formData.examCategory) {
-            const fetchExams = async () => {
-                try {
-                    const res = await axios.get(`/api/exams/category/${formData.examCategory}`);
-                    setExams(res.data);
-                } catch (err) {
-                    console.error('Error fetching exams:', err);
-                }
-            };
-            fetchExams();
+            setExams(dummyExams[formData.examCategory] || []);
+        } else {
+            setExams([]);
         }
     }, [formData.examCategory]);
 
@@ -225,13 +267,11 @@ const ResourceForm = () => {
                 ...prev,
                 skill: ''
             }));
-            setSkills([]);
         } else if (name === 'examCategory') {
             setFormData(prev => ({
                 ...prev,
                 exam: ''
             }));
-            setExams([]);
         }
     };
 
@@ -245,12 +285,16 @@ const ResourceForm = () => {
         setIsSubmitting(true);
 
         try {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
             // Prepare data based on resource type
             const submitData = {
                 title: formData.title,
                 description: formData.description,
                 type: formData.type,
-                url: formData.url
+                url: formData.url,
+                id: Date.now().toString() // Generate simple ID
             };
 
             if (formData.type === 'university') {
@@ -263,13 +307,10 @@ const ResourceForm = () => {
                 submitData.exam = formData.exam;
             }
 
-            // Send to backend
-            await axios.post('/api/resources', submitData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': localStorage.getItem('token') // Add auth token if available
-                }
-            });
+            // Add to dummy data (simulate saving)
+            dummyData.submittedResources.push(submitData);
+            console.log('Resource submitted:', submitData);
+            console.log('All submitted resources:', dummyData.submittedResources);
 
             setSubmitSuccess(true);
             setFormData({
@@ -280,7 +321,9 @@ const ResourceForm = () => {
                 university: '',
                 domain: '',
                 subject: '',
+                skillCategory: '',
                 skill: '',
+                examCategory: '',
                 exam: ''
             });
 
@@ -291,18 +334,10 @@ const ResourceForm = () => {
 
         } catch (error) {
             console.error('Error submitting resource:', error);
-            if (error.response?.data?.errors) {
-                const serverErrors = {};
-                error.response.data.errors.forEach(err => {
-                    serverErrors[err.param] = err.msg;
-                });
-                setErrors(serverErrors);
-            } else {
-                setErrors(prev => ({
-                    ...prev,
-                    submit: 'Failed to submit resource. Please try again.'
-                }));
-            }
+            setErrors(prev => ({
+                ...prev,
+                submit: 'Failed to submit resource. Please try again.'
+            }));
         } finally {
             setIsSubmitting(false);
         }
@@ -443,4 +478,4 @@ const ResourceForm = () => {
     );
 };
 
-export default ResourceForm; 
+export default SubmitResource;

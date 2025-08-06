@@ -28,6 +28,11 @@
     align-items: center;
 }
 
+strong {
+    font-size: 2rem;
+    color: yellow;
+}
+
 .nav-link {
     text-decoration: none;
     color: #e2e8f0;
