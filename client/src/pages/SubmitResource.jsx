@@ -32,90 +32,95 @@ const SubmitResource = () => {
     const [examCategories, setExamCategories] = useState([]);
     const [exams, setExams] = useState([]);
 
-    // Generate skill categories and skills (keeping existing logic since not in database)
-    const generateSkillData = () => {
-        const skillCategories = [
-            { _id: 'skill_cat_001', name: 'Programming Languages' },
-            { _id: 'skill_cat_002', name: 'Web Development' },
-            { _id: 'skill_cat_003', name: 'Data Science' },
-            { _id: 'skill_cat_004', name: 'Design' }
-        ];
+    // Fetch skill categories and skills from database
+    const fetchSkillData = async () => {
+        try {
+            // Fetch skill categories
+            const { data: skillCategoriesData, error: skillCatError } = await supabase
+                .from('skill_categories')
+                .select('*')
+                .order('name');
 
-        const skills = {
-            'skill_cat_001': [
-                { _id: 'skill_001', name: 'JavaScript' },
-                { _id: 'skill_002', name: 'Python' },
-                { _id: 'skill_003', name: 'Java' },
-                { _id: 'skill_004', name: 'C++' }
-            ],
-            'skill_cat_002': [
-                { _id: 'skill_005', name: 'React' },
-                { _id: 'skill_006', name: 'Angular' },
-                { _id: 'skill_007', name: 'Vue.js' },
-                { _id: 'skill_008', name: 'Node.js' }
-            ],
-            'skill_cat_003': [
-                { _id: 'skill_009', name: 'Machine Learning' },
-                { _id: 'skill_010', name: 'Data Analysis' },
-                { _id: 'skill_011', name: 'SQL' },
-                { _id: 'skill_012', name: 'R Programming' }
-            ],
-            'skill_cat_004': [
-                { _id: 'skill_013', name: 'UI/UX Design' },
-                { _id: 'skill_014', name: 'Graphic Design' },
-                { _id: 'skill_015', name: 'Figma' },
-                { _id: 'skill_016', name: 'Adobe Creative Suite' }
-            ]
-        };
+            if (skillCatError) throw skillCatError;
 
-        return { skillCategories, skills };
+            // Fetch all skills with their categories
+            const { data: skillsData, error: skillsError } = await supabase
+                .from('skills')
+                .select('*, skill_categories(name)')
+                .order('name');
+
+            if (skillsError) throw skillsError;
+
+            setSkillCategories(skillCategoriesData || []);
+
+            // Group skills by category
+            const skillsByCategory = {};
+            skillsData?.forEach(skill => {
+                const categoryId = skill.skill_category_id;
+                if (!skillsByCategory[categoryId]) {
+                    skillsByCategory[categoryId] = [];
+                }
+                skillsByCategory[categoryId].push(skill);
+            });
+
+            return skillsByCategory;
+        } catch (error) {
+            console.error('Error fetching skill data:', error);
+            return {};
+        }
     };
 
-    // Generate exam categories and exams (keeping existing logic since not in database)
-    const generateExamData = () => {
-        const examCategories = [
-            { _id: 'exam_cat_001', name: 'Engineering' },
-            { _id: 'exam_cat_002', name: 'Medical' },
-            { _id: 'exam_cat_003', name: 'Management' },
-            { _id: 'exam_cat_004', name: 'Government Jobs' }
-        ];
+    // Fetch exam categories and exams from database
+    const fetchExamData = async () => {
+        try {
+            // Fetch exam categories
+            const { data: examCategoriesData, error: examCatError } = await supabase
+                .from('exam_categories')
+                .select('*')
+                .order('name');
 
-        const exams = {
-            'exam_cat_001': [
-                { _id: 'exam_001', name: 'JEE Main' },
-                { _id: 'exam_002', name: 'JEE Advanced' },
-                { _id: 'exam_003', name: 'GATE' },
-                { _id: 'exam_004', name: 'BITSAT' }
-            ],
-            'exam_cat_002': [
-                { _id: 'exam_005', name: 'NEET' },
-                { _id: 'exam_006', name: 'AIIMS' },
-                { _id: 'exam_007', name: 'JIPMER' }
-            ],
-            'exam_cat_003': [
-                { _id: 'exam_008', name: 'CAT' },
-                { _id: 'exam_009', name: 'XAT' },
-                { _id: 'exam_010', name: 'GMAT' },
-                { _id: 'exam_011', name: 'GRE' }
-            ],
-            'exam_cat_004': [
-                { _id: 'exam_012', name: 'UPSC Civil Services' },
-                { _id: 'exam_013', name: 'SSC CGL' },
-                { _id: 'exam_014', name: 'Banking PO' },
-                { _id: 'exam_015', name: 'Railway Recruitment' }
-            ]
-        };
+            if (examCatError) throw examCatError;
 
-        return { examCategories, exams };
+            // Fetch all exams with their categories
+            const { data: examsData, error: examsError } = await supabase
+                .from('exams')
+                .select('*, exam_categories(name)')
+                .order('name');
+
+            if (examsError) throw examsError;
+
+            setExamCategories(examCategoriesData || []);
+
+            // Group exams by category
+            const examsByCategory = {};
+            examsData?.forEach(exam => {
+                const categoryId = exam.exam_category_id;
+                if (!examsByCategory[categoryId]) {
+                    examsByCategory[categoryId] = [];
+                }
+                examsByCategory[categoryId].push(exam);
+            });
+
+            return examsByCategory;
+        } catch (error) {
+            console.error('Error fetching exam data:', error);
+            return {};
+        }
     };
 
     // Load initial data on component mount
     useEffect(() => {
-        const { skillCategories } = generateSkillData();
-        const { examCategories } = generateExamData();
+        const loadInitialData = async () => {
+            const [skillsByCategory, examsByCategory] = await Promise.all([
+                fetchSkillData(),
+                fetchExamData()
+            ]);
 
-        setSkillCategories(skillCategories);
-        setExamCategories(examCategories);
+            setSkills(skillsByCategory);
+            setExams(examsByCategory);
+        };
+
+        loadInitialData();
     }, []);
 
     // Load domains when university changes
@@ -144,26 +149,6 @@ const SubmitResource = () => {
             setSubjects([]);
         }
     }, [formData.domain, formData.university, universities]);
-
-    // Load skills when skill category changes
-    useEffect(() => {
-        if (formData.skillCategory) {
-            const { skills } = generateSkillData();
-            setSkills(skills[formData.skillCategory] || []);
-        } else {
-            setSkills([]);
-        }
-    }, [formData.skillCategory]);
-
-    // Load exams when exam category changes
-    useEffect(() => {
-        if (formData.examCategory) {
-            const { exams } = generateExamData();
-            setExams(exams[formData.examCategory] || []);
-        } else {
-            setExams([]);
-        }
-    }, [formData.examCategory]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -226,17 +211,34 @@ const SubmitResource = () => {
             const { data, error } = await supabase
                 .from('resources')
                 .insert([{
-                    subject_id: resourceData.subject_id,
+                    subject_id: resourceData.subject_id || null,
+                    skill_id: resourceData.skill_id || null,
+                    exam_id: resourceData.exam_id || null,
                     title: resourceData.title,
                     description: resourceData.description,
                     url: resourceData.url,
                     submitted_by: user?.id,
-                    is_approved: false
+                    is_approved: false // Default to false for approval workflow
                 }])
                 .select()
                 .single();
 
             if (error) throw error;
+
+            // Also track in user_submitted_resources
+            if (data?.id) {
+                const { error: trackingError } = await supabase
+                    .from('user_submitted_resources')
+                    .insert({
+                        user_id: user.id,
+                        resource_id: data.id
+                    });
+
+                if (trackingError) {
+                    console.warn('Failed to track user submission:', trackingError);
+                    // Don't fail the entire operation for tracking
+                }
+            }
 
             return { success: true, id: data.id };
         } catch (error) {
@@ -322,13 +324,18 @@ const SubmitResource = () => {
             const resourceData = {
                 title: formData.title,
                 description: formData.description,
-                url: formData.url,
-                subject_id: formData.subject // This is the subject UUID from the database
+                url: formData.url
             };
 
-            // Only submit if we have a subject selected (university resources)
-            if (!formData.subject) {
-                throw new Error('University subject is required for submission');
+            // Set the appropriate ID based on selected category
+            if (formData.subject) {
+                resourceData.subject_id = formData.subject;
+            } else if (formData.skill) {
+                resourceData.skill_id = formData.skill;
+            } else if (formData.exam) {
+                resourceData.exam_id = formData.exam;
+            } else {
+                throw new Error('Please select a category for your resource');
             }
 
             // Simulate upload progress
@@ -414,7 +421,7 @@ const SubmitResource = () => {
                 >
                     <option value="">Select {label}</option>
                     {options.map(option => (
-                        <option key={option.value || option._id} value={option.value || option._id}>
+                        <option key={option.value || option.id || option._id} value={option.value || option.id || option._id}>
                             {option.label || option.name}
                         </option>
                     ))}
@@ -508,7 +515,7 @@ const SubmitResource = () => {
     if (dataLoading) {
         return (
             <div className="resource-form-container">
-                <div className="loading">Loading universities data...</div>
+                <div className="loading">Loading data...</div>
             </div>
         );
     }
@@ -546,13 +553,13 @@ const SubmitResource = () => {
                         <div className="category-section">
                             <h4>💡 Skill Development</h4>
                             {renderField('skillCategory', 'Skill Category', 'select', skillCategories, false)}
-                            {formData.skillCategory && renderField('skill', 'Skill', 'select', skills, false)}
+                            {formData.skillCategory && renderField('skill', 'Skill', 'select', skills[formData.skillCategory] || [], false)}
                         </div>
 
                         <div className="category-section">
                             <h4>📝 Competitive Exam</h4>
                             {renderField('examCategory', 'Exam Category', 'select', examCategories, false)}
-                            {formData.examCategory && renderField('exam', 'Exam', 'select', exams, false)}
+                            {formData.examCategory && renderField('exam', 'Exam', 'select', exams[formData.examCategory] || [], false)}
                         </div>
                     </div>
 

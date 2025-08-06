@@ -1,22 +1,88 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://krbhskeevfgpquensemj.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyYmhza2VldmZncHF1ZW5zZW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNzY4NDEsImV4cCI6MjA2OTk1Mjg0MX0.GOIwGtT2ZtgVFLa7HIQGlLBCejbb90OvykuXGCVpJI0'
+// Get environment variables
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        // This ensures sessions are properly managed
-        storage: window.localStorage,
-        // Set flowType to 'pkce' for better security
-        flowType: 'pkce'
-    },
-    // Allow anonymous access
-    global: {
-        headers: {
-            'X-Client-Info': 'supabase-js-web'
-        }
-    }
+// Log configuration status (without exposing sensitive keys)
+console.log('[Supabase] Configuration status:', {
+    url: supabaseUrl ? 'Configured' : 'Missing REACT_APP_SUPABASE_URL',
+    key: supabaseAnonKey ? 'Configured' : 'Missing REACT_APP_SUPABASE_ANON_KEY',
+    urlValid: supabaseUrl && supabaseUrl.includes('supabase.co'),
+    keyValid: supabaseAnonKey && supabaseAnonKey.startsWith('eyJ')
 });
+
+// Check if configuration is valid
+const isConfigured = supabaseUrl &&
+    supabaseAnonKey &&
+    supabaseUrl !== 'your_supabase_project_url' &&
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.includes('supabase.co');
+
+let supabase;
+
+if (isConfigured) {
+    try {
+        supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+            },
+            // Add timeout and retry configuration
+            realtime: {
+                params: {
+                    eventsPerSecond: 10,
+                },
+            },
+        });
+
+        console.log('[Supabase] Client initialized successfully');
+
+        // Test the connection
+        supabase.from('universities').select('id').limit(1).then(({ data, error }) => {
+            if (error) {
+                console.error('[Supabase] Connection test failed:', error.message);
+            } else {
+                console.log('[Supabase] Connection test successful');
+            }
+        }).catch(err => {
+            console.error('[Supabase] Connection test error:', err);
+        });
+
+    } catch (error) {
+        console.error('[Supabase] Failed to initialize client:', error);
+        supabase = null;
+    }
+} else {
+    console.warn('[Supabase] Configuration invalid or missing. Please check your .env file:');
+    console.warn('Required variables:');
+    console.warn('- REACT_APP_SUPABASE_URL=https://your-project.supabase.co');
+    console.warn('- REACT_APP_SUPABASE_ANON_KEY=your-anon-key');
+    supabase = null;
+}
+
+// Export a safe client that won't throw errors
+export { supabase };
+
+// Export configuration status for other components to check
+export const isSupabaseConfigured = isConfigured;
+
+// Export a helper function to check if Supabase is working
+export const testSupabaseConnection = async () => {
+    if (!supabase) {
+        return { success: false, error: 'Supabase not configured' };
+    }
+
+    try {
+        const { data, error } = await supabase.from('universities').select('id').limit(1);
+
+        if (error) {
+            return { success: false, error: error.message };
+        }
+
+        return { success: true, data };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+};
