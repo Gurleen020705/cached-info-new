@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
@@ -18,13 +18,20 @@ import Header from './components/Header';
 import SignIn from './components/SignIn';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
-import DebugPanel from './components/DebugPanel'; // You'll need to create this component
+import DebugPanel from './components/DebugPanel';
+
+// Modern Dashboard Component (standalone)
+import ModernAdminDashboard from './components/ModernAdminDashboard';
 
 // App content component (separated to use data context)
 const AppContent = () => {
   const { loading, error, initialLoadComplete, allResources } = useData();
   const [showApp, setShowApp] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const location = useLocation();
+
+  // Check if current route is dashboard
+  const isDashboardRoute = location.pathname === '/dashboard' || location.pathname === '/admin-dashboard';
 
   // Show app after initial load OR after 8 seconds (whichever comes first)
   useEffect(() => {
@@ -62,16 +69,37 @@ const AppContent = () => {
       error,
       initialLoadComplete,
       resourcesCount: allResources?.length || 0,
-      showApp
+      showApp,
+      currentRoute: location.pathname
     });
-  }, [loading, error, initialLoadComplete, allResources, showApp]);
+  }, [loading, error, initialLoadComplete, allResources, showApp, location.pathname]);
 
   // Show loading screen only if we haven't decided to show the app yet
-  if (!showApp && (loading || !initialLoadComplete)) {
+  if (!showApp && (loading || !initialLoadComplete) && !isDashboardRoute) {
     return <LoadingScreen error={error} />;
   }
 
-  // At this point, always render the app (with or without data)
+  // Special layout for dashboard routes (no header, full page)
+  if (isDashboardRoute) {
+    return (
+      <div className="dashboard-app">
+        <Routes>
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute>
+              <ModernAdminDashboard />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </div>
+    );
+  }
+
+  // Regular app layout with header
   return (
     <div className="app">
       {/* Debug Panel */}
@@ -116,11 +144,6 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
         <Route path="/submit" element={
           <ProtectedRoute>
             <SubmitResource />

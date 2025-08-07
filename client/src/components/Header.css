@@ -180,6 +180,13 @@
     font-size: 0.85rem;
 }
 
+.user-role {
+    color: #4a5568;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
 .dropdown-divider {
     border: none;
     height: 1px;
@@ -201,6 +208,7 @@
     text-align: left;
     cursor: pointer;
     font-size: 0.9rem;
+    position: relative;
 }
 
 .dropdown-link:hover {
@@ -212,6 +220,31 @@
     font-size: 1rem;
     width: 20px;
     text-align: center;
+}
+
+/* Dashboard Button Styling */
+.dashboard-btn {
+    color: #3182ce !important;
+    font-weight: 600;
+    position: relative;
+}
+
+.dashboard-btn:hover {
+    background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%) !important;
+    color: #2c5282 !important;
+}
+
+.new-tab-indicator {
+    position: absolute;
+    right: 1rem;
+    font-size: 0.8rem;
+    color: #4a5568;
+    opacity: 0.7;
+}
+
+.dashboard-btn:hover .new-tab-indicator {
+    opacity: 1;
+    color: #2c5282;
 }
 
 .logout-btn {
@@ -361,6 +394,11 @@
     .dropdown-link {
         padding: 1rem;
         font-size: 1rem;
+    }
+
+    .new-tab-indicator {
+        position: static;
+        margin-left: auto;
     }
 }
 

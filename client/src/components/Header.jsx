@@ -97,6 +97,15 @@ const Header = () => {
         }
     };
 
+    // Handle admin dashboard click - open in new tab
+    const handleDashboardClick = (e) => {
+        e.preventDefault();
+        setShowUserMenu(false);
+        closeMenu();
+        // Open admin dashboard in new tab
+        window.open('/admin-dashboard', '_blank');
+    };
+
     const isActive = (path) => location.pathname === path;
 
     const getUserInitials = () => {
@@ -228,17 +237,14 @@ const Header = () => {
                                         {/* Only show Dashboard for admin users */}
                                         {isAdmin() && (
                                             <>
-                                                <Link
-                                                    to="/dashboard"
-                                                    className="dropdown-link"
-                                                    onClick={() => {
-                                                        setShowUserMenu(false);
-                                                        closeMenu();
-                                                    }}
+                                                <button
+                                                    onClick={handleDashboardClick}
+                                                    className="dropdown-link dashboard-btn"
                                                 >
                                                     <span className="dropdown-icon">📊</span>
-                                                    Dashboard
-                                                </Link>
+                                                    Admin Dashboard
+                                                    <span className="new-tab-indicator">↗</span>
+                                                </button>
                                                 <hr className="dropdown-divider" />
                                             </>
                                         )}
