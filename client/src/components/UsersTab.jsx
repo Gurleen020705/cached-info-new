@@ -26,16 +26,42 @@ const UsersTab = () => {
 
     const fetchUsers = async () => {
         try {
-            const { data, error } = await supabase
+            // First try to get users from user_profiles
+            const { data: profilesData, error: profilesError } = await supabase
                 .from('user_profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setUsers(data || []);
+            if (profilesError) {
+                console.error('Error fetching user profiles:', profilesError);
+
+                // If there's an RLS issue, try to get users from auth.users (requires proper permissions)
+                // This might not work if RLS is blocking it, but it's worth trying
+                const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+
+                if (authError) {
+                    throw new Error('Unable to fetch users. This might be due to database permissions. Please ensure the admin user has proper access rights.');
+                }
+
+                // If we got auth users but no profiles, create basic profile data
+                const usersWithProfiles = authData.users.map(user => ({
+                    id: user.id,
+                    full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown User',
+                    role: user.user_metadata?.role || 'user',
+                    created_at: user.created_at,
+                    updated_at: user.updated_at || user.created_at,
+                    email: user.email
+                }));
+
+                setUsers(usersWithProfiles);
+            } else {
+                // Successfully got user profiles
+                setUsers(profilesData || []);
+            }
         } catch (err) {
-            setError('Failed to fetch users');
-            console.error(err);
+            const errorMessage = err.message || 'Failed to fetch users';
+            setError(errorMessage);
+            console.error('Error in fetchUsers:', err);
         } finally {
             setLoading(false);
         }
@@ -51,14 +77,32 @@ const UsersTab = () => {
                 })
                 .eq('id', userId);
 
-            if (error) throw error;
+            if (error) {
+                // If update fails, try to insert the profile if it doesn't exist
+                if (error.code === 'PGRST116') { // No rows updated
+                    const userToUpdate = users.find(u => u.id === userId);
+                    const { error: insertError } = await supabase
+                        .from('user_profiles')
+                        .insert({
+                            id: userId,
+                            full_name: userToUpdate?.full_name || userToUpdate?.email?.split('@')[0] || 'Unknown User',
+                            role: newRole,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (insertError) throw insertError;
+                } else {
+                    throw error;
+                }
+            }
 
             setSuccess(`User role updated to ${newRole}`);
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
             setError('Failed to update user role');
-            console.error(err);
+            console.error('Error updating role:', err);
         }
     };
 
@@ -74,22 +118,47 @@ const UsersTab = () => {
                 .delete()
                 .eq('id', userId);
 
-            if (profileError) throw profileError;
+            if (profileError && profileError.code !== 'PGRST116') {
+                throw profileError;
+            }
 
-            // Note: You might also want to delete from auth.users table
-            // but that requires admin privileges and should be done carefully
+            // Note: Deleting from auth.users requires admin privileges
+            // This might not work depending on your setup
+            try {
+                const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+                if (authError) {
+                    console.warn('Could not delete user from auth system:', authError);
+                    setSuccess('User profile deleted (auth user may still exist)');
+                } else {
+                    setSuccess('User deleted successfully');
+                }
+            } catch (authErr) {
+                console.warn('Auth deletion not available:', authErr);
+                setSuccess('User profile deleted (auth user may still exist)');
+            }
 
-            setSuccess('User deleted successfully');
             fetchUsers();
         } catch (err) {
             setError('Failed to delete user');
-            console.error(err);
+            console.error('Error deleting user:', err);
         }
     };
+
+    // Clear notifications after 5 seconds
+    useEffect(() => {
+        if (success || error) {
+            const timer = setTimeout(() => {
+                setSuccess(null);
+                setError(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [success, error]);
 
     const filteredUsers = users.filter(user =>
         !searchTerm ||
         user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -157,13 +226,13 @@ const UsersTab = () => {
                                     <td>
                                         <div className="user-cell">
                                             <div className="user-table-avatar">
-                                                {(user.full_name || user.id || 'A').charAt(0).toUpperCase()}
+                                                {(user.full_name || user.email || user.id || 'A').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="user-info">
                                                 <p className="user-name">
-                                                    {user.full_name || 'No name provided'}
+                                                    {user.full_name || user.email?.split('@')[0] || 'No name provided'}
                                                 </p>
-                                                <p className="user-id">{user.id}</p>
+                                                <p className="user-id">{user.email || user.id}</p>
                                             </div>
                                         </div>
                                     </td>

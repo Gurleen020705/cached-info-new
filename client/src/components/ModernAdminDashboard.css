@@ -36,6 +36,24 @@
     --error-500: #ef4444;
     --error-600: #dc2626;
 
+    /* Purple for edit buttons */
+    --purple-100: #f3e8ff;
+    --purple-500: #a855f7;
+    --purple-600: #9333ea;
+    --purple-700: #7c2d98;
+
+    /* Orange for pending status */
+    --orange-50: #fff7ed;
+    --orange-100: #ffedd5;
+    --orange-500: #f97316;
+    --orange-600: #ea580c;
+
+    /* Green for approved status */
+    --green-50: #f0fdf4;
+    --green-100: #dcfce7;
+    --green-500: #22c55e;
+    --green-600: #16a34a;
+
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -108,7 +126,7 @@ body {
     width: var(--sidebar-width);
     background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
     color: white;
-    transition: width var(--transition-normal);
+    transition: width var(--transition-normal), transform var(--transition-normal);
     position: fixed;
     left: 0;
     top: 0;
@@ -298,7 +316,10 @@ body {
 }
 
 .top-header {
-    background: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
     border-bottom: 1px solid var(--gray-200);
     padding: var(--spacing-xl) var(--spacing-2xl);
     box-shadow: var(--shadow-sm);
@@ -310,6 +331,12 @@ body {
     justify-content: space-between;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
 .header-left h2 {
     font-size: var(--font-size-2xl);
     font-weight: 700;
@@ -318,8 +345,25 @@ body {
 }
 
 .header-left p {
-    color: var(--gray-600);
+    color: white;
     font-size: var(--font-size-sm);
+}
+
+.mobile-menu-toggle {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu-toggle:hover {
+    background-color: var(--gray-100);
 }
 
 .page-content {
@@ -747,7 +791,7 @@ body {
 }
 
 /* ========================================
-   PAGE HEADERS
+   PAGE HEADERS (Stack vertically even on PC)
    ======================================== */
 .page-header {
     margin-bottom: var(--spacing-2xl);
@@ -756,9 +800,8 @@ body {
 .page-header-content,
 .users-header-content {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-xl);
+    flex-direction: column;
+    gap: var(--spacing-lg);
 }
 
 .page-header-text,
@@ -782,8 +825,8 @@ body {
 
 .page-header-actions {
     display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
 .users-header {
@@ -813,7 +856,8 @@ body {
     font-size: var(--font-size-sm);
     background-color: white;
     transition: var(--transition-fast);
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
 }
 
 .search-input:focus {
@@ -856,7 +900,7 @@ body {
 }
 
 .btn-secondary {
-    background-color: white;
+    background-color: rgb(255, 195, 54);
     color: var(--gray-700);
     border: 1px solid var(--gray-300);
 }
@@ -1192,6 +1236,7 @@ body {
     color: #d97706;
 }
 
+/* Updated status badges with better color distinction */
 .status-badge {
     padding: var(--spacing-xs) var(--spacing-md);
     border-radius: var(--radius-md);
@@ -1202,13 +1247,15 @@ body {
 }
 
 .status-badge.approved {
-    background-color: var(--success-100);
-    color: var(--success-700);
+    background-color: var(--green-100);
+    color: var(--green-600);
+    border: 1px solid var(--green-200);
 }
 
 .status-badge.pending {
-    background-color: var(--warning-100);
-    color: var(--warning-700);
+    background-color: var(--orange-100);
+    color: var(--orange-600);
+    border: 1px solid var(--orange-200);
 }
 
 .resource-meta,
@@ -1437,13 +1484,16 @@ body {
     transition: var(--transition-fast);
 }
 
+/* Updated edit button with classy purple */
 .user-action-btn.edit {
-    background-color: var(--primary-100);
-    color: var(--primary-600);
+    background-color: var(--purple-100);
+    color: var(--purple-600);
 }
 
 .user-action-btn.edit:hover {
-    background-color: var(--primary-200);
+    background-color: var(--purple-200);
+    color: var(--purple-700);
+    transform: translateY(-1px);
 }
 
 .user-action-btn.delete {
@@ -1558,26 +1608,24 @@ body {
     }
 
     .search-input {
-        width: 250px;
+        max-width: 250px;
     }
 }
 
 @media (max-width: 768px) {
-    :root {
-        --sidebar-width: 100%;
-        --sidebar-collapsed-width: 100%;
-    }
 
+    /* Mobile sidebar behavior */
     .sidebar {
         transform: translateX(-100%);
         transition: transform var(--transition-normal);
+        width: 280px;
     }
 
     .sidebar.collapsed {
         transform: translateX(-100%);
     }
 
-    .sidebar:not(.collapsed) {
+    .sidebar.mobile-open {
         transform: translateX(0);
     }
 
@@ -1587,6 +1635,10 @@ body {
 
     .main-content.sidebar-collapsed {
         margin-left: 0;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
     }
 
     .page-content {
@@ -1599,17 +1651,15 @@ body {
 
     .page-header-content,
     .users-header-content {
-        flex-direction: column;
-        align-items: stretch;
         gap: var(--spacing-lg);
     }
 
     .page-header-actions {
-        justify-content: space-between;
+        gap: var(--spacing-md);
     }
 
     .search-input {
-        width: 200px;
+        max-width: 200px;
     }
 
     .welcome-content {
@@ -1653,7 +1703,7 @@ body {
     }
 
     .search-input {
-        width: 150px;
+        max-width: 150px;
     }
 
     .btn {

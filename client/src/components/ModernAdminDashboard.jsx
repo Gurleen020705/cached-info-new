@@ -29,9 +29,11 @@ const ModernAdminDashboard = () => {
     const { user, isAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [currentUserProfile, setCurrentUserProfile] = useState(null);
 
     // Data states
     const [pendingResources, setPendingResources] = useState([]);
@@ -41,6 +43,25 @@ const ModernAdminDashboard = () => {
         totalUsers: 0,
         totalUniversities: 0
     });
+
+    // Fetch current user profile for display name
+    const fetchCurrentUserProfile = async () => {
+        if (!user?.id) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single();
+
+            if (!error && data) {
+                setCurrentUserProfile(data);
+            }
+        } catch (err) {
+            console.error('Error fetching user profile:', err);
+        }
+    };
 
     // Fetch functions
     const fetchPendingResources = async () => {
@@ -208,8 +229,36 @@ const ModernAdminDashboard = () => {
     useEffect(() => {
         if (isAdmin()) {
             fetchStats();
+            fetchCurrentUserProfile();
         }
-    }, [isAdmin]);
+    }, [isAdmin, user]);
+
+    // Handle window resize for mobile/desktop detection
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth > 768) {
+                setMobileMenuOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Handle clicking outside sidebar on mobile
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (mobileMenuOpen && window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar && !sidebar.contains(event.target)) {
+                    setMobileMenuOpen(false);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [mobileMenuOpen]);
 
     if (!isAdmin()) {
         return (
@@ -286,22 +335,23 @@ const ModernAdminDashboard = () => {
     return (
         <div className="admin-dashboard">
             {/* Sidebar */}
-            <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+            <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
                 <div className="sidebar-header">
                     <div className="sidebar-brand">
-                        <div className="sidebar-logo">
+                        {/* <div className="sidebar-logo">
                             <LayoutDashboard size={18} />
-                        </div>
+                        </div> */}
+                        <button
+                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                            className="sidebar-toggle"
+                        >
+                            <Menu size={20} />
+                        </button>
                         {!sidebarCollapsed && (
                             <h1 className="sidebar-title">CachedInfo</h1>
                         )}
                     </div>
-                    <button
-                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="sidebar-toggle"
-                    >
-                        <Menu size={20} />
-                    </button>
+
                 </div>
 
                 <nav className="sidebar-nav">
@@ -310,7 +360,13 @@ const ModernAdminDashboard = () => {
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => setActiveTab(item.id)}
+                                onClick={() => {
+                                    setActiveTab(item.id);
+                                    // Close mobile menu when navigating
+                                    if (window.innerWidth <= 768) {
+                                        setMobileMenuOpen(false);
+                                    }
+                                }}
                                 className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
                             >
                                 <Icon size={20} className="nav-icon" />
@@ -349,8 +405,22 @@ const ModernAdminDashboard = () => {
                 <header className="top-header">
                     <div className="header-content">
                         <div className="header-left">
-                            <h2>{menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}</h2>
-                            <p>Welcome back, {user?.email}</p>
+                            <button
+                                onClick={() => {
+                                    if (window.innerWidth <= 768) {
+                                        setMobileMenuOpen(!mobileMenuOpen);
+                                    } else {
+                                        setSidebarCollapsed(!sidebarCollapsed);
+                                    }
+                                }}
+                                className="mobile-menu-toggle"
+                            >
+                                <Menu size={20} />
+                            </button>
+                            <div>
+                                <h2>{menuItems.find(item => item.id === activeTab)?.label || 'Dashboard'}</h2>
+                                <p>Welcome back, {currentUserProfile?.full_name || user?.email}</p>
+                            </div>
                         </div>
                     </div>
                 </header>

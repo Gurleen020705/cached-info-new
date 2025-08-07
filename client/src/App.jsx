@@ -11,7 +11,7 @@ import Resources from './pages/Resources';
 import OurStory from './pages/OurStory';
 import SubmitResource from './pages/SubmitResource';
 import RequestResource from './pages/RequestResource';
-import Dashboard from './pages/Dashboard';
+// import Dashboard from './pages/Dashboard';
 
 // Components
 import Header from './components/Header';
@@ -84,11 +84,11 @@ const AppContent = () => {
     return (
       <div className="dashboard-app">
         <Routes>
-          <Route path="/dashboard" element={
+          {/* <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } />
+          } /> */}
           <Route path="/admin-dashboard" element={
             <ProtectedRoute>
               <ModernAdminDashboard />
