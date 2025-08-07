@@ -4,23 +4,23 @@
     margin: 0 auto;
 }
 
-.resources-header {
+.resources-container .resources-header {
     text-align: center;
     margin-bottom: 3rem;
 }
 
-.resources-header h1 {
+.resources-container .resources-header h1 {
     font-size: 2.5rem;
     color: #333;
     margin-bottom: 1rem;
 }
 
-.resources-header p {
+.resources-container .resources-header p {
     font-size: 1.1rem;
     color: #666;
 }
 
-.filters-section {
+.resources-container .filters-section {
     background: white;
     padding: 2rem;
     border-radius: 12px;
@@ -28,31 +28,31 @@
     margin-bottom: 2rem;
 }
 
-.filters-section h2 {
+.resources-container .filters-section h2 {
     margin-bottom: 1.5rem;
     color: #333;
 }
 
-.filters-grid {
+.resources-container .filters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
-.filter-dropdown {
+.resources-container .filter-dropdown {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.filter-dropdown label {
+.resources-container .filter-dropdown label {
     font-weight: 600;
     color: #333;
     font-size: 0.9rem;
 }
 
-.filter-dropdown select {
+.resources-container .filter-dropdown select {
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -62,13 +62,13 @@
     transition: border-color 0.3s;
 }
 
-.filter-dropdown select:focus {
+.resources-container .filter-dropdown select:focus {
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.clear-filters-btn {
+.resources-container .clear-filters-btn {
     background: #6c757d;
     color: white;
     border: none;
@@ -79,11 +79,11 @@
     transition: background-color 0.3s;
 }
 
-.clear-filters-btn:hover {
+.resources-container .clear-filters-btn:hover {
     background: #5a6268;
 }
 
-.content-section h2 {
+.resources-container .content-section h2 {
     margin-bottom: 2rem;
     color: #333;
 }
@@ -96,38 +96,37 @@
     text-align: center;
 }
 
-.resources-grid {
+.resources-container .resources-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1.5rem;
 }
 
-.resource-card {
+.resources-container .resource-card {
     background: linear-gradient(135deg, #e3e4e7 0%, #eae6e6 100%);
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     transition: all 0.3s;
-    border: 1px solid #262627;
     cursor: pointer;
 }
 
-.resource-card:hover {
+.resources-container .resource-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-.card-header {
+.resources-container .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    border-radius: 1rem;
+    border-radius: 1rem 1rem 0rem 0rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
 
-.resource-type-badge {
+.resources-container .resource-type-badge {
     background: rgba(255, 255, 255, 0.2);
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -136,13 +135,13 @@
     text-transform: uppercase;
 }
 
-.card-actions {
+.resources-container .card-actions {
     display: flex;
     gap: 0.5rem;
 }
 
-.save-btn,
-.share-btn {
+.resources-container .save-btn,
+.resources-container .share-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     padding: 0.5rem;
@@ -158,33 +157,33 @@
     color: white;
 }
 
-.save-btn:hover {
+.resources-container .save-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
 }
 
-.share-btn:disabled {
+.resources-container .share-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.share-btn:disabled:hover {
+.resources-container .share-btn:disabled:hover {
     transform: none;
     background: rgba(255, 255, 255, 0.2);
 }
 
-.card-content {
+.resources-container .card-content {
     padding: 1.5rem;
 }
 
-.resource-title {
+.resources-container .resource-title {
     margin: 0 0 1rem 0;
     font-size: 1.2rem;
     color: #000000;
     line-height: 1.4;
 }
 
-.resource-description {
+.resources-container .resource-description {
     margin: 0 0 1.5rem 0;
     color: #666;
     line-height: 1.6;
@@ -195,13 +194,13 @@
     overflow: hidden;
 }
 
-.resource-meta {
+.resources-container .resource-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-.meta-item {
+.resources-container .meta-item {
     background: #f8f9fa;
     padding: 0.25rem 0.75rem;
     border-radius: 15px;
@@ -210,7 +209,7 @@
     border: 1px solid #e9ecef;
 }
 
-.no-data {
+.resources-container .no-data {
     text-align: center;
     color: #666;
     font-size: 1.1rem;
@@ -233,7 +232,7 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.pagination-btn {
+.resources-container .pagination-btn {
     padding: 0.5rem 0.75rem;
     border: 1px solid #ddd;
     background: white;
@@ -248,26 +247,26 @@
     justify-content: center;
 }
 
-.pagination-btn:hover:not(:disabled) {
+.resources-container .pagination-btn:hover:not(:disabled) {
     background: #f8f9fa;
     border-color: #007bff;
     transform: translateY(-1px);
 }
 
-.pagination-btn.active {
+.resources-container .pagination-btn.active {
     background: #007bff;
     color: white;
     border-color: #007bff;
 }
 
-.pagination-btn:disabled {
+.resources-container .pagination-btn:disabled {
     background: #f8f9fa;
     color: #ccc;
     cursor: not-allowed;
     border-color: #e9ecef;
 }
 
-.pagination-dots {
+.resources-container .pagination-dots {
     padding: 0 0.5rem;
     color: #666;
     font-weight: bold;
@@ -288,7 +287,7 @@
     padding: 1rem;
 }
 
-.modal-content {
+.resources-container .modal-content {
     background: white;
     border-radius: 12px;
     max-width: 600px;
@@ -311,7 +310,7 @@
     }
 }
 
-.modal-header {
+.resources-container .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -322,13 +321,13 @@
     border-radius: 12px 12px 0 0;
 }
 
-.modal-header h3 {
+.resources-container .modal-header h3 {
     margin: 0;
     font-size: 1.4rem;
     line-height: 1.4;
 }
 
-.close-btn {
+.resources-container .close-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     font-size: 1.5rem;
@@ -344,20 +343,20 @@
     transition: all 0.3s;
 }
 
-.close-btn:hover {
+.resources-container .close-btn:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
 }
 
-.modal-body {
+.resources-container .modal-body {
     padding: 2rem;
 }
 
-.resource-details {
+.resources-container .resource-details {
     margin-bottom: 2rem;
 }
 
-.detail-item {
+.resources-container .detail-item {
     margin-bottom: 1rem;
     padding: 0.75rem;
     background: #f8f9fa;
@@ -365,24 +364,24 @@
     border-left: 4px solid #007bff;
 }
 
-.detail-item strong {
+.resources-container .detail-item strong {
     color: #333;
     margin-right: 0.5rem;
 }
 
-.description-section h4 {
+.resources-container .description-section h4 {
     margin-bottom: 1rem;
     color: #333;
     font-size: 1.2rem;
 }
 
-.description-section p {
+.resources-container .description-section p {
     color: #666;
     line-height: 1.6;
     font-size: 1rem;
 }
 
-.modal-footer {
+.resources-container .modal-footer {
     padding: 1.5rem;
     border-top: 1px solid #e9ecef;
     display: flex;
@@ -392,8 +391,8 @@
     border-radius: 0 0 12px 12px;
 }
 
-.save-resource-btn,
-.share-resource-btn {
+.resources-container .save-resource-btn,
+.resources-container .share-resource-btn {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;
@@ -402,21 +401,21 @@
     transition: all 0.3s;
 }
 
-.save-resource-btn {
+.resources-container .save-resource-btn {
     background: #28a745;
     color: white;
 }
 
-.save-resource-btn:hover:not(:disabled) {
+.resources-container .save-resource-btn:hover:not(:disabled) {
     background: #218838;
 }
 
-.save-resource-btn:disabled {
+.resources-container .save-resource-btn:disabled {
     background: #6c757d;
     cursor: not-allowed;
 }
 
-.share-resource-btn {
+.resources-container .share-resource-btn {
     background: #6c757d;
     color: white;
     opacity: 0.5;
@@ -429,55 +428,55 @@
         padding: 1rem;
     }
 
-    .resources-header h1 {
+    .resources-container .resources-header h1 {
         font-size: 2rem;
     }
 
-    .filters-section {
+    .resources-container .filters-section {
         padding: 1.5rem;
     }
 
-    .filters-grid {
+    .resources-container .filters-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
 
-    .resources-grid {
+    .resources-container .resources-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
 
-    .resource-card {
+    .resources-container .resource-card {
         min-width: auto;
     }
 
-    .card-content {
+    .resources-container .card-content {
         padding: 1rem;
     }
 
-    .resource-title {
+    .resources-container .resource-title {
         font-size: 1.1rem;
     }
 
-    .resource-description {
+    .resources-container .resource-description {
         font-size: 0.9rem;
         -webkit-line-clamp: 2;
     }
 
-    .resource-meta {
+    .resources-container .resource-meta {
         flex-direction: column;
     }
 
-    .meta-item {
+    .resources-container .meta-item {
         width: fit-content;
     }
 
-    .card-actions {
+    .resources-container .card-actions {
         gap: 0.25rem;
     }
 
-    .save-btn,
-    .share-btn {
+    .resources-container .save-btn,
+    .resources-container .share-btn {
         width: 32px;
         height: 32px;
         font-size: 0.9rem;
@@ -490,13 +489,13 @@
         margin: 1.5rem 0;
     }
 
-    .pagination-btn {
+    .resources-container .pagination-btn {
         padding: 0.4rem 0.6rem;
         font-size: 0.9rem;
         min-width: 40px;
     }
 
-    .resources-info {
+    .resources-container .resources-info {
         font-size: 0.9rem;
         margin-bottom: 1rem;
     }
@@ -506,47 +505,47 @@
         padding: 0.5rem;
     }
 
-    .modal-content {
+    .resources-container .modal-content {
         max-height: 95vh;
     }
 
-    .modal-header {
+    .resources-container .modal-header {
         padding: 1rem;
     }
 
-    .modal-header h3 {
+    .resources-container .modal-header h3 {
         font-size: 1.2rem;
     }
 
-    .modal-body {
+    .resources-container .modal-body {
         padding: 1rem;
     }
 
-    .detail-item {
+    .resources-container .detail-item {
         padding: 0.5rem;
         margin-bottom: 0.75rem;
     }
 
-    .description-section h4 {
+    .resources-container .description-section h4 {
         font-size: 1.1rem;
     }
 
-    .description-section p {
+    .resources-container .description-section p {
         font-size: 0.95rem;
     }
 
-    .modal-footer {
+    .resources-container .modal-footer {
         padding: 1rem;
         flex-direction: column;
     }
 
-    .save-resource-btn,
-    .share-resource-btn {
+    .resources-container .save-resource-btn,
+    .resources-container .share-resource-btn {
         width: 100%;
         justify-content: center;
     }
 
-    .close-btn {
+    .resources-container .close-btn {
         width: 36px;
         height: 36px;
     }
@@ -557,34 +556,34 @@
         padding: 0.5rem;
     }
 
-    .filters-section,
-    .content-section {
+    .resources-container .filters-section,
+    .resources-container .content-section {
         padding: 1rem;
     }
 
-    .resources-header {
+    .resources-container .resources-header {
         margin-bottom: 2rem;
     }
 
-    .resources-header h1 {
+    .resources-container .resources-header h1 {
         font-size: 1.8rem;
     }
 
-    .resource-card {
+    .resources-container .resource-card {
         box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
     }
 
-    .card-header {
+    .resources-container .card-header {
         padding: 0.75rem;
     }
 
-    .resource-type-badge {
+    .resources-container .resource-type-badge {
         font-size: 0.7rem;
         padding: 0.2rem 0.5rem;
     }
 
-    .save-btn,
-    .share-btn {
+    .resources-container .save-btn,
+    .resources-container .share-btn {
         width: 28px;
         height: 28px;
         font-size: 0.8rem;
@@ -597,7 +596,7 @@
         flex-wrap: wrap;
     }
 
-    .pagination-btn {
+    .resources-container .pagination-btn {
         padding: 0.3rem 0.5rem;
         font-size: 0.8rem;
         min-width: 36px;

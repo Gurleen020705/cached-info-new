@@ -50,10 +50,10 @@ const PendingResourcesTab = ({
                                 className="search-input"
                             />
                         </div>
-                        <button className="btn btn-secondary">
+                        {/* <button className="btn btn-secondary">
                             <Filter size={16} />
                             Filter
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>

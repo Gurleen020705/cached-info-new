@@ -229,10 +229,10 @@ const ResourcesTab = () => {
                                 className="search-input"
                             />
                         </div>
-                        <button className="btn btn-secondary">
+                        {/* <button className="btn btn-secondary">
                             <Filter size={16} />
                             Filter
-                        </button>
+                        </button> */}
                         <button
                             onClick={() => setShowAddForm(true)}
                             className="btn btn-primary"

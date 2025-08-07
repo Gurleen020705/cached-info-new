@@ -25,11 +25,15 @@ const SignIn = () => {
         return <div>Redirecting to dashboard...</div>;
     }
 
+
+
     const handleGoogleSignIn = async () => {
         try {
             setIsSigningIn(true);
             setError('');
             await signInWithGoogle();
+
+
         } catch (error) {
             console.error('Google sign in failed:', error.message);
             setError('Google sign in failed. Please try again.');
@@ -80,6 +84,8 @@ const SignIn = () => {
             setEmailSignInLoading(false);
         }
     };
+
+
 
     return (
         <div className="signin-container">
